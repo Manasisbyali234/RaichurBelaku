@@ -56,15 +56,15 @@ const PDFMapper = ({ newspaper }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-newspaper-blue mb-4">ಕ್ಲಿಕ್ ಮಾಡಬಹುದಾದ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ</h2>
+    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-semibold text-newspaper-blue mb-3 sm:mb-4">ಕ್ಲಿಕ್ ಮಾಡಬಹುದಾದ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ</h2>
       
-      <div className="relative inline-block">
+      <div className="relative inline-block w-full">
         <img
           ref={imageRef}
           src={newspaper.pages ? newspaper.pages[currentPage].imageUrl : newspaper.previewImage}
           alt={`Newspaper page ${currentPage + 1}`}
-          className="max-w-full h-auto border border-gray-300 cursor-crosshair"
+          className="w-full h-auto border border-gray-300 cursor-crosshair"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -105,41 +105,41 @@ const PDFMapper = ({ newspaper }) => {
       </div>
 
       {newspaper.pages && newspaper.totalPages > 1 && (
-        <div className="mt-4 flex justify-between items-center">
+        <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
           <button
             onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
             disabled={currentPage === 0}
-            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto bg-gray-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             ← ಹಿಂದಿನ ಪುಟ
           </button>
           
-          <div className="text-sm text-gray-600">
+          <div className="text-xs sm:text-sm text-gray-600">
             ಪುಟ {currentPage + 1} / {newspaper.totalPages}
           </div>
           
           <button
             onClick={() => setCurrentPage(Math.min(newspaper.totalPages - 1, currentPage + 1))}
             disabled={currentPage === newspaper.totalPages - 1}
-            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto bg-gray-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             ಮುಂದಿನ ಪುಟ →
           </button>
         </div>
       )}
 
-      <div className="mt-4">
+      <div className="mt-3 sm:mt-4">
         {areas.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-3 sm:mb-4">
             <button
               onClick={handleSaveAll}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              className="w-full sm:w-auto bg-green-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm sm:text-base"
             >
               ಎಲ್ಲಾ ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಿ ({areas.length})
             </button>
           </div>
         )}
-        <div className="text-sm text-gray-600">
+        <div className="text-xs sm:text-sm text-gray-600 space-y-1">
           <p>• ಮೌಸ್ ಡ್ರ್ಯಾಗ್ ಮಾಡಿ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ</p>
           <p>• ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಪ್ರದೇಶಗಳನ್ನು ಅಳಿಸಲು × ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿ</p>
         </div>

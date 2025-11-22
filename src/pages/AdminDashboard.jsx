@@ -56,26 +56,26 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-newspaper-blue mb-2">ಆಡಳಿತ ಡ್ಯಾಶ್ಬೋರ್ಡ್</h1>
-            <p className="text-gray-600">ಪತ್ರಿಕೆ ಅಪ್ಲೋಡ್ ಮಾಡಿ ಮತ್ತು ಕ್ಲಿಕ್ ಮಾಡಬಹುದಾದ ಪ್ರದೇಶಗಳನ್ನು ಸೇರಿಸಿ</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-newspaper-blue mb-1 sm:mb-2">ಆಡಳಿತ ಡ್ಯಾಶ್ಬೋರ್ಡ್</h1>
+            <p className="text-sm sm:text-base text-gray-600">ಪತ್ರಿಕೆ ಅಪ್ಲೋಡ್ ಮಾಡಿ ಮತ್ತು ಕ್ಲಿಕ್ ಮಾಡಬಹುದಾದ ಪ್ರದೇಶಗಳನ್ನು ಸೇರಿಸಿ</p>
           </div>
           <button
             onClick={handleLogout}
-            className="bg-newspaper-red text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            className="bg-newspaper-red text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base self-start sm:self-auto"
           >
             ಲಾಗ್ ಔಟ್
           </button>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+            <nav className="-mb-px flex flex-wrap gap-2 sm:gap-0 sm:space-x-8">
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'upload'
                     ? 'border-newspaper-blue text-newspaper-blue'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -85,7 +85,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('mapper')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'mapper'
                     ? 'border-newspaper-blue text-newspaper-blue'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -96,7 +96,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('manage')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'manage'
                     ? 'border-newspaper-blue text-newspaper-blue'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

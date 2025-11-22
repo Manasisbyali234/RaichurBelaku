@@ -87,52 +87,52 @@ const Home = () => {
       </div>
 
       {/* Features Section */}
-      <div className="bg-white py-16">
+      <div className="bg-white py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">ನಮ್ಮ ವೈಶಿಷ್ಟ್ಯಗಳು</h2>
-            <div className="w-24 h-1 bg-newspaper-red mx-auto"></div>
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">ನಮ್ಮ ವೈಶಿಷ್ಟ್ಯಗಳು</h2>
+            <div className="w-16 sm:w-24 h-1 bg-newspaper-red mx-auto"></div>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-newspaper-blue rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-newspaper-blue rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">ಡಿಜಿಟಲ್ ಪತ್ರಿಕೆ</h3>
-              <p className="text-gray-600">ಸಂಪೂರ್ಣ ಡಿಜಿಟಲ್ ಅನುಭವದೊಂದಿಗೆ ಪತ್ರಿಕೆ ಓದಿ</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">ಡಿಜಿಟಲ್ ಪತ್ರಿಕೆ</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-2">ಸಂಪೂರ್ಣ ಡಿಜಿಟಲ್ ಅನುಭವದೊಂದಿಗೆ ಪತ್ರಿಕೆ ಓದಿ</p>
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 bg-newspaper-red rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-newspaper-red rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">ಇಂಟರ್ಯಾಕ್ಟಿವ್ ಓದುವಿಕೆ</h3>
-              <p className="text-gray-600">ಪ್ರತಿ ಸುದ್ದಿಯನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ ವಿವರವಾಗಿ ಓದಿ</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">ಇಂಟರ್ಯಾಕ್ಟಿವ್ ಓದುವಿಕೆ</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-2">ಪ್ರತಿ ಸುದ್ದಿಯನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ ವಿವರವಾಗಿ ಓದಿ</p>
             </div>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-newspaper-blue rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center sm:col-span-2 md:col-span-1">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-newspaper-blue rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">ಸಂಗ್ರಹಿತ ಪತ್ರಿಕೆಗಳು</h3>
-              <p className="text-gray-600">ಹಿಂದಿನ ಎಲ್ಲಾ ಆವೃತ್ತಿಗಳನ್ನು ಸುಲಭವಾಗಿ ಪ್ರವೇಶಿಸಿ</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">ಸಂಗ್ರಹಿತ ಪತ್ರಿಕೆಗಳು</h3>
+              <p className="text-sm sm:text-base text-gray-600 px-2">ಹಿಂದಿನ ಎಲ್ಲಾ ಆವೃತ್ತಿಗಳನ್ನು ಸುಲಭವಾಗಿ ಪ್ರವೇಶಿಸಿ</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* About Section */}
-      <div className="bg-gray-50 py-16">
+      <div className="bg-gray-50 py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">ರಾಯಚೂರು ಬೆಳಕು ಬಗ್ಗೆ</h2>
-          <p className="text-lg text-gray-700 leading-relaxed">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">ರಾಯಚೂರು ಬೆಳಕು ಬಗ್ಗೆ</h2>
+          <p className="text-sm sm:text-lg text-gray-700 leading-relaxed px-4">
             ರಾಯಚೂರು ಬೆಳಕು ಒಂದು ಆಧುನಿಕ ಡಿಜಿಟಲ್ ಪತ್ರಿಕೆಯಾಗಿದ್ದು, ಸ್ಥಳೀಯ ಸುದ್ದಿಗಳು, 
             ರಾಜ್ಯ ಮತ್ತು ರಾಷ್ಟ್ರೀಯ ಮಾಹಿತಿಗಳನ್ನು ಕನ್ನಡದಲ್ಲಿ ನಿಮಗೆ ತಲುಪಿಸುತ್ತದೆ. 
             ನಮ್ಮ ಗುರಿ ಸತ್ಯವಾದ, ನಿಖರವಾದ ಮತ್ತು ಸಮಯೋಚಿತ ಮಾಹಿತಿಯನ್ನು ಒದಗಿಸುವುದು.

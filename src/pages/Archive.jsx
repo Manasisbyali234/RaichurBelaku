@@ -52,37 +52,37 @@ const Archive = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-newspaper-blue mb-2">ಸಂಗ್ರಹಿತ ಪತ್ರಿಕೆಗಳು</h1>
-          <p className="text-gray-600">ಹಿಂದಿನ ಎಲ್ಲಾ ಆವೃತ್ತಿಗಳನ್ನು ಇಲ್ಲಿ ನೋಡಿ</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-newspaper-blue mb-1 sm:mb-2">ಸಂಗ್ರಹಿತ ಪತ್ರಿಕೆಗಳು</h1>
+          <p className="text-sm sm:text-base text-gray-600">ಹಿಂದಿನ ಎಲ್ಲಾ ಆವೃತ್ತಿಗಳನ್ನು ಇಲ್ಲಿ ನೋಡಿ</p>
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">ಹುಡುಕಿ</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">ಹುಡುಕಿ</label>
               <div className="relative">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="ಪತ್ರಿಕೆ ಹೆಸರು ಹುಡುಕಿ..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-newspaper-blue"
+                  className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-newspaper-blue"
                 />
-                <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-2 sm:left-3 top-2.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
-            <div className="md:w-48">
-              <label className="block text-sm font-medium text-gray-700 mb-2">ವಿಂಗಡಿಸಿ</label>
+            <div className="sm:w-40 md:w-48">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">ವಿಂಗಡಿಸಿ</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-newspaper-blue"
+                className="w-full px-2 sm:px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-newspaper-blue"
               >
                 <option value="date-desc">ಹೊಸದರಿಂದ ಹಳೆಯದಕ್ಕೆ</option>
                 <option value="date-asc">ಹಳೆಯದರಿಂದ ಹೊಸದಕ್ಕೆ</option>
@@ -94,8 +94,8 @@ const Archive = () => {
         </div>
 
         {/* Results Count */}
-        <div className="mb-4">
-          <p className="text-gray-600">
+        <div className="mb-3 sm:mb-4">
+          <p className="text-sm sm:text-base text-gray-600">
             {filteredNewspapers.length} ಪತ್ರಿಕೆಗಳು ಕಂಡುಬಂದಿವೆ
           </p>
         </div>
@@ -119,43 +119,43 @@ const Archive = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredNewspapers.map((newspaper) => (
               <div key={newspaper.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-w-3 aspect-h-4">
                   <img
                     src={newspaper.previewImage}
                     alt={newspaper.name}
-                    className="w-full h-64 object-cover"
+                    className="w-full h-48 sm:h-64 object-cover"
                   />
                 </div>
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <div className="flex items-center mb-2">
                     <div className="w-2 h-2 bg-newspaper-red rounded-full mr-2"></div>
-                    <span className="text-sm text-gray-600">{formatDate(newspaper.date)}</span>
+                    <span className="text-xs sm:text-sm text-gray-600">{formatDate(newspaper.date)}</span>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2 truncate">{newspaper.name}</h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <h3 className="font-semibold text-gray-900 mb-2 truncate text-sm sm:text-base">{newspaper.name}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                     ಗಾತ್ರ: {newspaper.width} × {newspaper.height}
                   </p>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Link
                       to={`/newspaper/${newspaper.id}`}
-                      className="flex-1 bg-newspaper-blue text-white text-center py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm"
+                      className="flex-1 bg-newspaper-blue text-white text-center py-2 px-3 sm:px-4 rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                     >
                       ಓದಿ
                     </Link>
                     <a
                       href={newspaper.pdfData}
                       download={newspaper.name}
-                      className="flex-1 border border-newspaper-blue text-newspaper-blue text-center py-2 px-4 rounded-md hover:bg-blue-50 transition-colors text-sm"
+                      className="flex-1 border border-newspaper-blue text-newspaper-blue text-center py-2 px-3 sm:px-4 rounded-md hover:bg-blue-50 transition-colors text-xs sm:text-sm"
                     >
                       ಡೌನ್ಲೋಡ್
                     </a>
                   </div>
                 </div>
               </div>
-            ))}
+            ))
           </div>
         )}
       </div>

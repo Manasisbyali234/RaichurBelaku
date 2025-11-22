@@ -24,3 +24,22 @@ body {
   border: 2px dashed #B91C1C;
   background-color: rgba(185, 28, 28, 0.1);
 }
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  .clickable-area {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  /* Improve touch targets */
+  button, a, input, select {
+    min-height: 44px;
+  }
+  
+  /* Better text readability on mobile */
+  body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}

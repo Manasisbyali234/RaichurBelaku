@@ -77,20 +77,27 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
     handleFileUpload(file);
   };
 
+  const handleDivClick = () => {
+    document.getElementById('pdf-upload').click();
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-newspaper-blue mb-4">PDF ಅಪ್ಲೋಡ್ ಮಾಡಿ</h2>
+    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-semibold text-newspaper-blue mb-3 sm:mb-4">PDF ಅಪ್ಲೋಡ್ ಮಾಡಿ</h2>
       
       {!uploadedNewspaper ? (
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors cursor-pointer ${
             dragOver 
               ? 'border-newspaper-blue bg-blue-50' 
-              : 'border-gray-300 hover:border-newspaper-blue'
+              : 'border-gray-300 hover:border-newspaper-blue active:border-newspaper-blue'
           }`}
           onDrop={handleDrop}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
+          onClick={handleDivClick}
+          onTouchStart={() => setDragOver(true)}
+          onTouchEnd={() => setDragOver(false)}
         >
           {uploading ? (
             <div className="flex flex-col items-center">
@@ -104,64 +111,62 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <p className="text-lg text-gray-600 mb-2">PDF ಫೈಲ್ ಅನ್ನು ಇಲ್ಲಿ ಡ್ರ್ಯಾಗ್ ಮಾಡಿ</p>
-              <p className="text-sm text-gray-500 mb-4">ಅಥವಾ ಕ್ಲಿಕ್ ಮಾಡಿ ಆಯ್ಕೆ ಮಾಡಿ</p>
+              <p className="text-base sm:text-lg text-gray-600 mb-2">PDF ಫೈಲ್ ಅನ್ನು ಇಲ್ಲಿ ಟ್ಯಾಪ್ ಮಾಡಿ</p>
+              <p className="text-sm text-gray-500 mb-4">ಅಥವಾ ಕೆಳಗಿನ ಬಟನ್ ಒತ್ತಿ</p>
               <input
                 type="file"
-                accept=".pdf"
+                accept=".pdf,application/pdf"
                 onChange={handleFileSelect}
                 className="hidden"
                 id="pdf-upload"
+                capture="environment"
               />
-              <label
-                htmlFor="pdf-upload"
-                className="bg-newspaper-blue text-white px-6 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors"
-              >
+              <div className="bg-newspaper-blue text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg cursor-pointer hover:bg-blue-700 active:bg-blue-800 transition-colors inline-block text-sm sm:text-base">
                 ಫೈಲ್ ಆಯ್ಕೆ ಮಾಡಿ
-              </label>
+              </div>
             </div>
           )}
         </div>
       ) : (
         <div>
-          <div className="mb-4 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">{uploadedNewspaper.name}</h3>
-            <div className="text-sm text-gray-600">
+          <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">{uploadedNewspaper.name}</h3>
+            <div className="text-xs sm:text-sm text-gray-600">
               ಪುಟ {currentPage + 1} / {uploadedNewspaper.totalPages}
             </div>
           </div>
           
-          <div className="border rounded-lg p-4 mb-4">
+          <div className="border rounded-lg p-2 sm:p-4 mb-3 sm:mb-4">
             <img
               src={uploadedNewspaper.pages[currentPage].imageUrl}
               alt={`Page ${currentPage + 1}`}
-              className="max-w-full h-auto mx-auto"
-              style={{ maxHeight: '600px' }}
+              className="w-full h-auto mx-auto"
+              style={{ maxHeight: '400px' }}
             />
           </div>
           
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <button
               onClick={prevPage}
               disabled={currentPage === 0}
-              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto bg-gray-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               ← ಹಿಂದಿನ ಪುಟ
             </button>
             
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <button
                 onClick={() => {
                   setUploadedNewspaper(null);
                   setCurrentPage(0);
                 }}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                className="bg-gray-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
               >
                 ರದ್ದುಮಾಡಿ
               </button>
               <button
                 onClick={handleSaveNewspaper}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 text-sm sm:text-base"
               >
                 ಉಳಿಸಿ
               </button>
@@ -170,7 +175,7 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
             <button
               onClick={nextPage}
               disabled={currentPage === uploadedNewspaper.totalPages - 1}
-              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto bg-gray-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               ಮುಂದಿನ ಪುಟ →
             </button>

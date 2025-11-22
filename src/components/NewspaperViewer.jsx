@@ -53,23 +53,23 @@ const NewspaperViewer = ({ newspaper }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold text-newspaper-blue mb-2">ಇಂದಿನ ಪತ್ರಿಕೆ</h2>
-        <p className="text-gray-600">{new Date(newspaper.date).toLocaleDateString('kn-IN')}</p>
+    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+      <div className="mb-3 sm:mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-newspaper-blue mb-1 sm:mb-2">ಇಂದಿನ ಪತ್ರಿಕೆ</h2>
+        <p className="text-sm sm:text-base text-gray-600">{new Date(newspaper.date).toLocaleDateString('kn-IN')}</p>
       </div>
       
-      <div className="relative inline-block">
+      <div className="relative inline-block w-full">
         <img
           src={newspaper.previewImage}
           alt="Today's newspaper"
-          className="max-w-full h-auto border border-gray-300 rounded-lg shadow-sm"
+          className="w-full h-auto border border-gray-300 rounded-lg shadow-sm"
         />
         
         {areas.map(area => (
           <div
             key={area.id}
-            className="absolute cursor-pointer"
+            className="absolute cursor-pointer hover:bg-blue-200 hover:bg-opacity-30 transition-colors"
             style={{
               left: area.x,
               top: area.y,
@@ -79,11 +79,7 @@ const NewspaperViewer = ({ newspaper }) => {
             onClick={() => handleAreaClick(area)}
           />
         ))}
-        
-
       </div>
-      
-
     </div>
   );
 };

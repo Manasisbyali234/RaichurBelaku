@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Noto Sans Kannada', sans-serif;
+}
+
+.clickable-area {
+  position: absolute;
+  border: 2px solid #1E40AF;
+  background-color: rgba(30, 64, 175, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clickable-area:hover {
+  background-color: rgba(30, 64, 175, 0.2);
+  border-color: #B91C1C;
+}
+
+.drawing-area {
+  position: absolute;
+  border: 2px dashed #B91C1C;
+  background-color: rgba(185, 28, 28, 0.1);
+}

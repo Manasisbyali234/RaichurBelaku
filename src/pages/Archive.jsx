@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getNewspapers } from '../utils/hybridStorage';
+import { getNewspapers } from '../utils/localStorage';
 
 const Archive = () => {
   const [newspapers, setNewspapers] = useState([]);

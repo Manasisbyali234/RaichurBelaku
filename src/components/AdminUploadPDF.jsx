@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { convertAllPDFPagesToImages, savePDFFile } from '../utils/pdfUtils';
-import { saveNewspaper, getStorageStatus } from '../utils/hybridStorage';
+import { saveNewspaper, getStorageStatus } from '../utils/localStorage';
 
 const AdminUploadPDF = ({ onUploadSuccess }) => {
   const [uploading, setUploading] = useState(false);

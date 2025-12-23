@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getClickableAreas } from '../utils/hybridStorage';
+import { getClickableAreas } from '../utils/localStorage';
 
 const NewspaperViewer = ({ newspaper }) => {
   const [areas, setAreas] = useState([]);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getTodaysNewspaper, getNewspapers, getNewspaperById } from '../utils/hybridStorage';
+import { getTodaysNewspaper, getNewspapers, getNewspaperById } from '../utils/localStorage';
 import NewspaperViewer from '../components/NewspaperViewer';
 
 const NewsPage = () => {

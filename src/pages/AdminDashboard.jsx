@@ -8,7 +8,7 @@ import {
   getTodaysNewspaper, 
   deleteNewspaper, 
   getStorageStatus 
-} from '../utils/hybridStorage';
+} from '../utils/localStorage';
 
 const AdminDashboard = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

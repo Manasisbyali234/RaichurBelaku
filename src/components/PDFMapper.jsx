@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { saveClickableAreas, getClickableAreas } from '../utils/hybridStorage';
+import { saveClickableAreas, getClickableAreas } from '../utils/localStorage';
 
 const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday }) => {
   const [areas, setAreas] = useState([]);

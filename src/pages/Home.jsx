@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getTodaysNewspaper } from '../utils/hybridStorage';
+import { getTodaysNewspaper } from '../utils/localStorage';
 
 const Home = () => {
   const [todaysNewspaper, setTodaysNewspaper] = useState(null);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getNewspapers, getClickableAreas } from '../utils/hybridStorage';
+import { getNewspapers, getClickableAreas } from '../utils/localStorage';
 
 const NewsTab = () => {
   const { newspaperId, areaId } = useParams();

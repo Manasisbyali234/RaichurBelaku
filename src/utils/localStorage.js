@@ -1,26 +1,10 @@
-import { db } from './firebase.js';
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  setDoc, 
-  deleteDoc, 
-  updateDoc,
-  query,
-  orderBy 
-} from 'firebase/firestore';
-
-// Collections
-const NEWSPAPERS_COLLECTION = 'newspapers';
-const SETTINGS_COLLECTION = 'settings';
-const TODAY_DOC = 'todaysNewspaper';
+// localStorage-based storage utilities
+const NEWSPAPERS_KEY = 'newspapers';
+const TODAY_KEY = 'todaysNewspaper';
 
 // Save newspaper
 export const saveNewspaper = async (newspaper, pdfFile = null) => {
   try {
-    console.log('Saving newspaper to Firestore:', newspaper.name);
-    
     // Convert PDF to base64 if provided
     if (pdfFile) {
       const reader = new FileReader();
@@ -31,14 +15,16 @@ export const saveNewspaper = async (newspaper, pdfFile = null) => {
       newspaper.pdfData = pdfData;
     }
     
-    // Save to Firestore
-    const docRef = doc(db, NEWSPAPERS_COLLECTION, newspaper.id);
-    await setDoc(docRef, {
-      ...newspaper,
-      updatedAt: new Date().toISOString()
-    });
+    const newspapers = getNewspapers();
+    const existingIndex = newspapers.findIndex(n => n.id === newspaper.id);
     
-    console.log('Newspaper saved successfully');
+    if (existingIndex >= 0) {
+      newspapers[existingIndex] = { ...newspaper, updatedAt: new Date().toISOString() };
+    } else {
+      newspapers.push({ ...newspaper, updatedAt: new Date().toISOString() });
+    }
+    
+    localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(newspapers));
     return newspaper.id;
   } catch (error) {
     console.error('Error saving newspaper:', error);
@@ -47,11 +33,10 @@ export const saveNewspaper = async (newspaper, pdfFile = null) => {
 };
 
 // Get all newspapers
-export const getNewspapers = async () => {
+export const getNewspapers = () => {
   try {
-    const q = query(collection(db, NEWSPAPERS_COLLECTION), orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const stored = localStorage.getItem(NEWSPAPERS_KEY);
+    return stored ? JSON.parse(stored) : [];
   } catch (error) {
     console.error('Error getting newspapers:', error);
     return [];
@@ -61,9 +46,8 @@ export const getNewspapers = async () => {
 // Get newspaper by ID
 export const getNewspaperById = async (id) => {
   try {
-    const docRef = doc(db, NEWSPAPERS_COLLECTION, id);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+    const newspapers = getNewspapers();
+    return newspapers.find(n => n.id === id) || null;
   } catch (error) {
     console.error('Error getting newspaper:', error);
     return null;
@@ -73,13 +57,14 @@ export const getNewspaperById = async (id) => {
 // Delete newspaper
 export const deleteNewspaper = async (id) => {
   try {
-    // Delete from Firestore
-    await deleteDoc(doc(db, NEWSPAPERS_COLLECTION, id));
+    const newspapers = getNewspapers();
+    const filtered = newspapers.filter(n => n.id !== id);
+    localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(filtered));
     
     // Clear from today's newspaper if it's the current one
     const todaysNewspaper = await getTodaysNewspaper();
     if (todaysNewspaper && todaysNewspaper.id === id) {
-      await setDoc(doc(db, SETTINGS_COLLECTION, TODAY_DOC), { newspaperId: null });
+      localStorage.removeItem(TODAY_KEY);
     }
     
     return true;
@@ -92,12 +77,16 @@ export const deleteNewspaper = async (id) => {
 // Save clickable areas
 export const saveClickableAreas = async (newspaperId, areas) => {
   try {
-    const docRef = doc(db, NEWSPAPERS_COLLECTION, newspaperId);
-    await updateDoc(docRef, { 
-      areas: areas,
-      updatedAt: new Date().toISOString()
-    });
-    return true;
+    const newspapers = getNewspapers();
+    const index = newspapers.findIndex(n => n.id === newspaperId);
+    
+    if (index >= 0) {
+      newspapers[index].areas = areas;
+      newspapers[index].updatedAt = new Date().toISOString();
+      localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(newspapers));
+      return true;
+    }
+    return false;
   } catch (error) {
     console.error('Error saving areas:', error);
     return false;
@@ -118,11 +107,10 @@ export const getClickableAreas = async (newspaperId) => {
 // Get today's newspaper
 export const getTodaysNewspaper = async () => {
   try {
-    const docRef = doc(db, SETTINGS_COLLECTION, TODAY_DOC);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists() && docSnap.data().newspaperId) {
-      return await getNewspaperById(docSnap.data().newspaperId);
+    const stored = localStorage.getItem(TODAY_KEY);
+    if (stored) {
+      const todayData = JSON.parse(stored);
+      return await getNewspaperById(todayData.newspaperId);
     }
     return null;
   } catch (error) {
@@ -134,11 +122,10 @@ export const getTodaysNewspaper = async () => {
 // Set today's newspaper
 export const setTodaysNewspaper = async (newspaper) => {
   try {
-    const docRef = doc(db, SETTINGS_COLLECTION, TODAY_DOC);
-    await setDoc(docRef, { 
+    localStorage.setItem(TODAY_KEY, JSON.stringify({ 
       newspaperId: newspaper.id,
       updatedAt: new Date().toISOString()
-    });
+    }));
     return true;
   } catch (error) {
     console.error('Error setting today\'s newspaper:', error);
@@ -164,7 +151,7 @@ export const publishToday = async (newspaperId) => {
 // Check storage status
 export const getStorageStatus = () => {
   return {
-    usingFirebase: true,
-    storageType: 'Firestore Database Only'
+    usingFirebase: false,
+    storageType: 'localStorage Only'
   };
 };

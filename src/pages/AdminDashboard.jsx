@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import AdminUploadPDF from '../components/AdminUploadPDF';
 import PDFMapper from '../components/PDFMapper';
 import AdminLogin from '../components/AdminLogin';
+import StorageStatus from '../components/StorageStatus';
 import { 
   getNewspapers, 
   publishToday, 
   getTodaysNewspaper, 
   deleteNewspaper, 
-  getStorageStatus 
+  getStorageStatus,
+  cleanupOldNewspapers,
+  clearAllData,
+  createBackup,
+  restoreFromBackup,
+  testLocalStorage,
+  forceSaveTest
 } from '../utils/localStorage';
 
 const AdminDashboard = () => {
@@ -156,6 +163,9 @@ const AdminDashboard = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Storage Status - Always visible */}
+          <StorageStatus onDataChange={loadNewspapers} />
+          
           {activeTab === 'upload' && (
             <AdminUploadPDF onUploadSuccess={handleUploadSuccess} />
           )}

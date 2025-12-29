@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { saveClickableAreas, getClickableAreas } from '../utils/localStorage';
+import AreaEditForm from './AreaEditForm';
 
 const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday }) => {
   const [areas, setAreas] = useState([]);
@@ -8,6 +9,7 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedArea, setSelectedArea] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingArea, setEditingArea] = useState(null);
 
   const imageRef = useRef(null);
 
@@ -80,6 +82,21 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
 
   const handleAreaClick = (area) => {
     setSelectedArea(area);
+    setEditingArea(area);
+  };
+
+  const handleSaveArea = (updatedArea) => {
+    const updatedAreas = areas.map(area => 
+      area.id === updatedArea.id ? updatedArea : area
+    );
+    setAreas(updatedAreas);
+    setEditingArea(null);
+    setSelectedArea(null);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingArea(null);
+    setSelectedArea(null);
   };
 
   const handleSaveAll = async () => {
@@ -313,11 +330,16 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
         </div>
       </div>
 
-
+      {/* Area Edit Form */}
+      {editingArea && (
+        <AreaEditForm
+          area={editingArea}
+          onSave={handleSaveArea}
+          onClose={handleCloseEdit}
+        />
+      )}
     </div>
   );
 };
-
-
 
 export default PDFMapper;

@@ -1,18 +1,25 @@
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set worker source with fallback
-try {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
-} catch (error) {
-  console.error('PDF.js worker setup error:', error);
+// Configure PDF.js worker for both development and production
+if (typeof window !== 'undefined') {
+  // Use CDN worker that works everywhere
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 }
 
 
 
 export const convertPDFToImage = async (pdfFile) => {
   try {
+    console.log('Converting PDF to image:', pdfFile.name);
+    
     const arrayBuffer = await pdfFile.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    const pdf = await pdfjsLib.getDocument({
+      data: arrayBuffer,
+      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+      cMapPacked: true,
+      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`
+    }).promise;
+    
     const page = await pdf.getPage(1);
     
     // High quality scale
@@ -31,27 +38,43 @@ export const convertPDFToImage = async (pdfFile) => {
     
     await page.render(renderContext).promise;
     
-    // High quality
+    // Convert to base64 and store in localStorage
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
     return {
-      imageUrl: canvas.toDataURL('image/jpeg', 0.95),
+      imageUrl: imageData,
       width: viewport.width,
       height: viewport.height
     };
   } catch (error) {
     console.error('Error converting PDF to image:', error);
-    throw error;
+    throw new Error('PDF ಪ್ರಕ್ರಿಯೆಗೊಳಿಸುವಲ್ಲಿ ದೋಷ: ' + error.message);
   }
 };
 
 export const convertAllPDFPagesToImages = async (pdfFile) => {
   try {
+    console.log('Starting PDF conversion for:', pdfFile.name);
+    
     const arrayBuffer = await pdfFile.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    console.log('PDF arrayBuffer created, size:', arrayBuffer.byteLength);
+    
+    const pdf = await pdfjsLib.getDocument({
+      data: arrayBuffer,
+      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+      cMapPacked: true,
+      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`
+    }).promise;
+    
     const numPages = pdf.numPages;
+    console.log('PDF loaded successfully, pages:', numPages);
+    
     const pages = [];
     
     // Process all pages
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      console.log(`Processing page ${pageNum}/${numPages}`);
+      
       const page = await pdf.getPage(pageNum);
       
       // High quality scale
@@ -78,7 +101,11 @@ export const convertAllPDFPagesToImages = async (pdfFile) => {
         width: viewport.width,
         height: viewport.height
       });
+      
+      console.log(`Page ${pageNum} converted successfully`);
     }
+    
+    console.log('All pages converted successfully');
     
     return {
       pages,
@@ -90,7 +117,17 @@ export const convertAllPDFPagesToImages = async (pdfFile) => {
     };
   } catch (error) {
     console.error('Error converting PDF pages to images:', error);
-    throw error;
+    
+    // Provide more specific error messages
+    if (error.name === 'InvalidPDFException') {
+      throw new Error('ಅಮಾನ್ಯ PDF ಫೈಲ್. ದಯವಿಟ್ಟು ಮತ್ತೊಂದು ಫೈಲ್ ಪ್ರಯತ್ನಿಸಿ.');
+    } else if (error.name === 'MissingPDFException') {
+      throw new Error('PDF ಫೈಲ್ ಕಾಣೆಯಾಗಿದೆ ಅಥವಾ ಹಾನಿಗೊಳಗಾಗಿದೆ.');
+    } else if (error.name === 'UnexpectedResponseException') {
+      throw new Error('PDF ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ನೆಟ್ವರ್ಕ್ ದೋಷ.');
+    } else {
+      throw new Error('PDF ಪ್ರಕ್ರಿಯೆಗೊಳಿಸುವಲ್ಲಿ ದೋಷ: ' + error.message);
+    }
   }
 };
 

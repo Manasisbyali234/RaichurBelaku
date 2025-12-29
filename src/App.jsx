@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import NewsPage from './pages/NewsPage';
 import Archive from './pages/Archive';
 import AdminDashboard from './pages/AdminDashboard';
+import TestPage from './pages/TestPage';
 import NewsTab from './components/NewsTab';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
                 <Route path="/today" element={<NewsPage />} />
                 <Route path="/archive" element={<Archive />} />
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/test" element={<TestPage />} />
                 <Route path="/newspaper/:newspaperId" element={<NewsPage />} />
               </Routes>
               <Footer />

@@ -15,6 +15,8 @@ const NewspaperViewer = ({ newspaper }) => {
         try {
           const clickableAreas = newspaper.areas || await getClickableAreas(newspaper.id) || [];
           console.log('Loading areas for newspaper:', newspaper.id, 'Areas:', clickableAreas);
+          console.log('Current page:', currentPage + 1);
+          console.log('Areas for current page:', clickableAreas.filter(area => area.pageNumber === currentPage + 1));
           setAreas(clickableAreas);
         } catch (error) {
           console.error('Error loading areas:', error);
@@ -24,14 +26,14 @@ const NewspaperViewer = ({ newspaper }) => {
     };
     
     loadAreas();
-  }, [newspaper]);
+  }, [newspaper, currentPage]);
 
   const handleAreaClick = (area) => {
-    console.log('Clicked area data:', area);
-    console.log('Area title:', area.title);
-    console.log('Area content:', area.content);
-    if (area.title || area.content) {
+    console.log('Area clicked:', area);
+    if (area && (area.title || area.content)) {
       setSelectedNews(area);
+    } else {
+      console.log('No content for this area');
     }
   };
 
@@ -137,26 +139,43 @@ const NewspaperViewer = ({ newspaper }) => {
         <div className="flex-1 overflow-auto">
           <div className="p-4">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="relative" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
+              <div 
+                className="relative" 
+                style={{ 
+                  transform: `scale(${zoom})`, 
+                  transformOrigin: 'top left',
+                  position: 'relative'
+                }}
+              >
                 <img
                   ref={imageRef}
                   src={getCurrentPageImage()}
                   alt={`Newspaper page ${currentPage + 1}`}
-                  className="newspaper-viewer-image w-full h-auto"
+                  className="newspaper-viewer-image w-full h-auto block"
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}
                 />
                 
                 {areas.filter(area => area.pageNumber === currentPage + 1).map(area => (
                   <div
                     key={area.id}
-                    className="absolute cursor-pointer hover:bg-red-500 hover:bg-opacity-20 transition-colors border-2 border-transparent hover:border-red-500"
                     style={{
-                      left: area.x,
-                      top: area.y,
-                      width: Math.abs(area.width),
-                      height: Math.abs(area.height)
+                      position: 'absolute',
+                      left: `${area.x}px`,
+                      top: `${area.y}px`,
+                      width: `${Math.abs(area.width)}px`,
+                      height: `${Math.abs(area.height)}px`,
+                      backgroundColor: 'transparent',
+                      cursor: 'pointer',
+                      zIndex: 100,
+                      pointerEvents: 'auto'
                     }}
-                    onClick={() => handleAreaClick(area)}
-                    title={area.title || 'ಸುದ್ದಿ ಓದಲು ಕ್ಲಿಕ್ ಮಾಡಿ'}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Area clicked!', area);
+                      handleAreaClick(area);
+                    }}
+                    title={area.title || 'ಕ್ಲಿಕ್ ಮಾಡಿ'}
                   />
                 ))}
               </div>
@@ -223,8 +242,8 @@ const NewspaperViewer = ({ newspaper }) => {
             </div>
             <div className="flex-1 overflow-y-auto p-6">
             
-            {/* Show cropped image from the selected area */}
-            <div className="mb-4">
+            {/* Show cropped image from the selected area - Main focus */}
+            <div className="mb-6">
               <CroppedImage 
                 sourceImage={getCurrentPageImage()}
                 area={selectedNews}
@@ -232,20 +251,28 @@ const NewspaperViewer = ({ newspaper }) => {
               />
             </div>
             
+            {/* Additional image if provided */}
             {selectedNews.imageUrl && (
               <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">ಹೆಚ್ಚುವರಿ ಚಿತ್ರ:</h4>
                 <img
                   src={selectedNews.imageUrl}
                   alt={selectedNews.title}
-                  className="w-full h-auto rounded-lg"
+                  className="w-full h-auto rounded-lg border border-gray-200"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
               </div>
             )}
             
-            <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-              {selectedNews.content || 'ಈ ಸುದ್ದಿಗೆ ವಿಷಯ ಸೇರಿಸಲಾಗಿಲ್ಲ.'}
-            </div>
+            {/* Content text */}
+            {selectedNews.content && (
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">ವಿವರಣೆ:</h4>
+                <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                  {selectedNews.content}
+                </div>
+              </div>
+            )}
             
             </div>
             <div className="p-4 border-t bg-gray-50 text-center">
@@ -263,72 +290,47 @@ const NewspaperViewer = ({ newspaper }) => {
   );
 };
 
-// Component to show cropped image from selected area
 const CroppedImage = ({ sourceImage, area, alt }) => {
   const canvasRef = React.useRef(null);
-  const imgRef = React.useRef(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState(null);
 
   useEffect(() => {
-    const cropImage = () => {
+    const img = new Image();
+    img.onload = () => {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-      const img = new Image();
       
-      img.onload = () => {
-        // Get the displayed image element to calculate scale
-        const displayedImg = document.querySelector('.newspaper-viewer-image');
-        if (!displayedImg) return;
-        
-        const scaleX = img.naturalWidth / displayedImg.clientWidth;
-        const scaleY = img.naturalHeight / displayedImg.clientHeight;
-        
-        const cropX = Math.min(area.x, area.x + area.width) * scaleX;
-        const cropY = Math.min(area.y, area.y + area.height) * scaleY;
-        const cropWidth = Math.abs(area.width) * scaleX;
-        const cropHeight = Math.abs(area.height) * scaleY;
-        
-        // Set canvas size with better quality
-        const scale = 2; // For better quality
-        canvas.width = cropWidth * scale;
-        canvas.height = cropHeight * scale;
-        
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.scale(scale, scale);
-        
-        ctx.drawImage(
-          img,
-          cropX, cropY, cropWidth, cropHeight,
-          0, 0, cropWidth, cropHeight
-        );
-        
-        setCroppedImageUrl(canvas.toDataURL('image/png', 1.0));
-      };
+      canvas.width = Math.abs(area.width);
+      canvas.height = Math.abs(area.height);
       
-      img.crossOrigin = 'anonymous';
-      img.src = sourceImage;
+      ctx.drawImage(
+        img,
+        area.x, area.y, Math.abs(area.width), Math.abs(area.height),
+        0, 0, Math.abs(area.width), Math.abs(area.height)
+      );
+      
+      setCroppedImageUrl(canvas.toDataURL());
     };
-    
-    if (sourceImage && area) {
-      setTimeout(cropImage, 100); // Small delay to ensure image is rendered
-    }
+    img.crossOrigin = 'anonymous';
+    img.src = sourceImage;
   }, [sourceImage, area]);
 
   return (
     <div className="bg-gray-50 p-4 rounded-lg">
       <canvas ref={canvasRef} style={{ display: 'none' }} />
-      {croppedImageUrl ? (
-        <img
-          ref={imgRef}
-          src={croppedImageUrl}
-          alt={alt}
-          className="max-w-full h-auto mx-auto rounded border border-gray-300 shadow-sm bg-white"
-          style={{ maxHeight: '400px' }}
-        />
-      ) : (
-        <div className="text-center py-4 text-gray-500">Loading cropped image...</div>
-      )}
+      <div className="text-center">
+        {croppedImageUrl ? (
+          <img
+            src={croppedImageUrl}
+            alt={alt}
+            className="max-w-full h-auto mx-auto rounded border-2 border-gray-300 shadow-lg bg-white"
+            style={{ maxHeight: '500px' }}
+          />
+        ) : (
+          <div className="text-gray-500">Loading...</div>
+        )}
+        <p className="text-xs text-gray-600 mt-2">ಆಯ್ಕೆ ಮಾಡಿದ ಪ್ರದೇಶದ ಚಿತ್ರ</p>
+      </div>
     </div>
   );
 };

@@ -22,16 +22,14 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
     try {
       console.log('Processing and saving PDF:', file.name);
       
-      const [pagesData, pdfData] = await Promise.all([
-        convertAllPDFPagesToImages(file),
-        savePDFFile(file)
+      const [pagesData] = await Promise.all([
+        convertAllPDFPagesToImages(file)
       ]);
 
       const newspaper = {
         id: Date.now().toString(),
         name: file.name,
         date: new Date().toISOString(),
-        pdfData,
         pages: pagesData.pages,
         totalPages: pagesData.totalPages,
         actualPages: pagesData.actualPages,
@@ -42,7 +40,7 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
       };
       
       // Auto-save immediately
-      const savedId = await saveNewspaper(newspaper, file);
+      const savedId = await saveNewspaper(newspaper);
       const savedNewspaper = { ...newspaper, id: savedId };
       
       // Reset form
@@ -55,7 +53,18 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
       alert(`ಪತ್ರಿಕೆ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್ಲೋಡ್ ಆಗಿದೆ! (${storageStatus.storageType})`);
     } catch (error) {
       console.error('Upload error:', error);
-      alert('PDF ಅಪ್ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ ಸಂಭವಿಸಿದೆ');
+      
+      let errorMessage = 'PDF ಅಪ್ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ ಸಂಭವಿಸಿದೆ';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'QuotaExceededError') {
+        errorMessage = 'ಸ್ಟೋರೇಜ್ ಸ್ಥಳ ನಿಂದಿದೆ. ದಯವಿಟ್ಟು ಕೆಲವು ಫೈಲ್ಗಳನ್ನು ಅಳಿಸಿ.';
+      } else if (error.name === 'NetworkError') {
+        errorMessage = 'ನೆಟ್ವರ್ಕ್ ಸಮಸ್ಯೆ. ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ.';
+      }
+      
+      alert(errorMessage);
     } finally {
       setUploading(false);
     }

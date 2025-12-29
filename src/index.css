@@ -48,6 +48,50 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* User-facing clickable areas in newspaper viewer */
+.newspaper-clickable-area {
+  position: absolute;
+  border: 2px solid rgba(30, 64, 175, 0.6);
+  background-color: rgba(30, 64, 175, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.newspaper-clickable-area:hover {
+  background-color: rgba(185, 28, 28, 0.2);
+  border-color: #B91C1C;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+/* Pulse animation for clickable areas */
+.newspaper-clickable-area::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid rgba(30, 64, 175, 0.4);
+  border-radius: 2px;
+  animation: pulse-border 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
 .drawing-area {
   position: absolute;
   border: 2px dashed #B91C1C;

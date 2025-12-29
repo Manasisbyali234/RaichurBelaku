@@ -3,6 +3,8 @@ import AdminUploadPDF from '../components/AdminUploadPDF';
 import PDFMapper from '../components/PDFMapper';
 import AdminLogin from '../components/AdminLogin';
 import StorageStatus from '../components/StorageStatus';
+import ErrorBoundary from '../components/ErrorBoundary';
+import DataMigration from '../components/DataMigration';
 import { 
   getNewspapers, 
   publishToday, 
@@ -26,10 +28,13 @@ const AdminDashboard = () => {
 
   const loadNewspapers = async () => {
     try {
+      console.log('Loading newspapers...');
       const savedNewspapers = await getNewspapers();
+      console.log('Loaded newspapers:', savedNewspapers.length);
       setNewspapers(savedNewspapers);
       
       const todaysNews = await getTodaysNewspaper();
+      console.log('Today\'s newspaper:', todaysNews?.name || 'None');
       setTodaysNewspaper(todaysNews);
       
       if (savedNewspapers.length > 0 && !currentNewspaper) {
@@ -37,6 +42,7 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error loading newspapers:', error);
+      // Don't show alert here as it might interfere with UI
     }
   };
 
@@ -166,34 +172,45 @@ const AdminDashboard = () => {
           {/* Storage Status - Always visible */}
           <StorageStatus onDataChange={loadNewspapers} />
           
+          {/* Data Migration - Show only if localStorage has data */}
+          <DataMigration />
+          
           {activeTab === 'upload' && (
             <AdminUploadPDF onUploadSuccess={handleUploadSuccess} />
           )}
 
           {activeTab === 'mapper' && (
-            <div>
-              {currentNewspaper ? (
-                <PDFMapper 
-                  newspaper={currentNewspaper} 
-                  onNavigateToManage={() => {
-                    loadNewspapers(); // Refresh newspapers after mapping
-                    setActiveTab('manage');
-                  }}
-                  onAreasSaved={loadNewspapers} // Refresh when areas are saved
-                  onPublishToday={handlePublishToday} // Add publish function
-                />
-              ) : (
-                <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <div className="text-gray-400 mb-4">
-                    <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+            <ErrorBoundary>
+              <div>
+                {currentNewspaper ? (
+                  <PDFMapper 
+                    newspaper={currentNewspaper} 
+                    onNavigateToManage={() => {
+                      loadNewspapers(); // Refresh newspapers after mapping
+                      setActiveTab('manage');
+                    }}
+                    onAreasSaved={async () => {
+                      try {
+                        await loadNewspapers(); // Refresh when areas are saved
+                      } catch (error) {
+                        console.error('Error in onAreasSaved callback:', error);
+                      }
+                    }}
+                    onPublishToday={handlePublishToday} // Add publish function
+                  />
+                ) : (
+                  <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                    <div className="text-gray-400 mb-4">
+                      <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">ಯಾವುದೇ ಪತ್ರಿಕೆ ಆಯ್ಕೆಯಾಗಿಲ್ಲ</h3>
+                    <p className="text-gray-600">ಮೊದಲು PDF ಅಪ್ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಪತ್ರಿಕೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ</p>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">ಯಾವುದೇ ಪತ್ರಿಕೆ ಆಯ್ಕೆಯಾಗಿಲ್ಲ</h3>
-                  <p className="text-gray-600">ಮೊದಲು PDF ಅಪ್ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಪತ್ರಿಕೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ</p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </ErrorBoundary>
           )}
 
           {activeTab === 'manage' && (

@@ -138,10 +138,14 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
         // Update local state with saved areas
         setAreas(validAreas);
         
-        // Call refresh callback
+        // Call refresh callback without navigation
         if (onAreasSaved) {
           console.log('Calling onAreasSaved callback');
-          onAreasSaved();
+          try {
+            await onAreasSaved();
+          } catch (callbackError) {
+            console.error('Callback error:', callbackError);
+          }
         }
       } else {
         alert('ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
@@ -163,6 +167,16 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
       <h2 className="text-lg sm:text-xl font-semibold text-newspaper-blue mb-3 sm:mb-4">ಕ್ಲಿಕ್ ಮಾಡಬಹುದಾದ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ</h2>
+      
+      {/* Loading overlay during save */}
+      {isSaving && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-newspaper-blue border-t-transparent mx-auto mb-4"></div>
+            <p className="text-gray-700">ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲಾಗುತ್ತಿದೆ...</p>
+          </div>
+        </div>
+      )}
       
       <div className="relative inline-block w-full">
         <img

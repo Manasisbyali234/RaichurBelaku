@@ -17,11 +17,15 @@ export default defineConfig({
         }
       }
     },
-    assetsDir: 'assets'
+    assetsDir: 'assets',
+    target: 'es2015'
   },
   server: {
     fs: {
       allow: ['..', 'node_modules']
+    },
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'credentialless'
     }
   }
 })

@@ -1,56 +1,78 @@
+// Hybrid storage utilities - localStorage for dev, Supabase for production
 import * as supabaseStorage from './supabaseStorage';
 
-const API_BASE = '/.netlify/functions';
-const NEWSPAPERS_KEY = 'raichuru-newspapers';
-const TODAY_KEY = 'raichuru-today';
+const NEWSPAPERS_KEY = 'newspapers';
+const TODAY_KEY = 'todaysNewspaper';
 
-// Check if we should use Supabase
+// Check if we should use Supabase (production) or localStorage (development)
 const useSupabase = () => {
-  return false; // Disabled for now
+  // For now, always use localStorage to avoid Supabase dependency
+  return false;
 };
 
-// API helper
-const apiCall = async (endpoint, method = 'GET', data = null) => {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: data ? JSON.stringify(data) : null
-  });
-  return response.json();
-};
-
-export const saveNewspaper = async (newspaper) => {
+// Save newspaper with storage optimization
+export const saveNewspaper = (newspaper, pdfFile = null) => {
   try {
-    const newspapers = await getNewspapers();
+    const optimizedNewspaper = { ...newspaper };
+    delete optimizedNewspaper.pdfData;
+    
+    const newspapers = getNewspapers();
     const existingIndex = newspapers.findIndex(n => n.id === newspaper.id);
     
     if (existingIndex >= 0) {
-      newspapers[existingIndex] = { ...newspaper, updatedAt: new Date().toISOString() };
+      newspapers[existingIndex] = { ...optimizedNewspaper, updatedAt: new Date().toISOString() };
     } else {
-      newspapers.push({ ...newspaper, updatedAt: new Date().toISOString() });
+      newspapers.push({ ...optimizedNewspaper, updatedAt: new Date().toISOString() });
     }
     
-    await apiCall('/newspapers', 'POST', newspapers);
+    // Check storage size and auto-cleanup if needed
+    const testData = JSON.stringify(newspapers);
+    if (testData.length > 2 * 1024 * 1024) { // 2MB limit
+      // Keep only the 2 most recent newspapers
+      const sorted = newspapers.sort((a, b) => new Date(b.date) - new Date(a.date));
+      const cleaned = sorted.slice(0, 2);
+      localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(cleaned));
+      throw new Error('ಸ್ಟೋರೇಜ್ ಸ್ಥಳ ಕಡಿಮೆ. ಹಳೆಯ ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.');
+    }
+    
+    localStorage.setItem(NEWSPAPERS_KEY, testData);
     return newspaper.id;
   } catch (error) {
-    console.error('Error saving newspaper:', error);
+    if (error.name === 'QuotaExceededError') {
+      // Emergency cleanup - keep only 1 newspaper
+      const newspapers = getNewspapers();
+      if (newspapers.length > 0) {
+        const latest = newspapers.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+        localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify([latest]));
+        throw new Error('ಸ್ಟೋರೇಜ್ ಪೂರ್ಣ. ಕೊನೆಯ ಪತ್ರಿಕೆ ಮಾತ್ರ ಉಳಿಸಲಾಗಿದೆ.');
+      } else {
+        localStorage.clear();
+        throw new Error('ಸ್ಟೋರೇಜ್ ಕ್ಲಿಯರ್ ಮಾಡಲಾಗಿದೆ.');
+      }
+    }
     throw error;
   }
 };
 
-export const getNewspapers = async () => {
+// Get all newspapers
+export const getNewspapers = () => {
   try {
-    const newspapers = await apiCall('/newspapers');
-    return Array.isArray(newspapers) ? newspapers : [];
+    const stored = localStorage.getItem(NEWSPAPERS_KEY);
+    if (!stored) return [];
+    
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     console.error('Error getting newspapers:', error);
+    localStorage.removeItem(NEWSPAPERS_KEY);
     return [];
   }
 };
 
-export const getNewspaperById = async (id) => {
+// Get newspaper by ID
+export const getNewspaperById = (id) => {
   try {
-    const newspapers = await getNewspapers();
+    const newspapers = getNewspapers();
     return newspapers.find(n => n.id === id) || null;
   } catch (error) {
     console.error('Error getting newspaper:', error);

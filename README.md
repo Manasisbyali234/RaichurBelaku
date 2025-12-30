@@ -22,14 +22,18 @@ A complete frontend-only e-newspaper web application built with React and Tailwi
 - **Styling**: Tailwind CSS
 - **Routing**: React Router DOM
 - **PDF Processing**: PDF.js
-- **Storage**: localStorage (no backend required)
+- **Storage**: Supabase (cloud) + localStorage (fallback)
+- **Database**: Supabase PostgreSQL
+- **File Storage**: Supabase Storage (for shareable PDF links)
 - **Font**: Noto Sans Kannada
 
-## Installation
+## Installation & Deployment
+
+### Local Development
 
 1. **Clone or download the project**
    ```bash
-   cd Newzpaper
+   cd RaichurBelaku
    ```
 
 2. **Install dependencies**
@@ -37,13 +41,34 @@ A complete frontend-only e-newspaper web application built with React and Tailwi
    npm install
    ```
 
-3. **Start the development server**
+3. **Setup environment (for cloud storage)**
+   ```bash
+   node setup-env.js
+   ```
+   Or manually create `.env` file with your Supabase credentials.
+
+4. **Start the development server**
    ```bash
    npm run dev
    ```
 
-4. **Open your browser**
+5. **Open your browser**
    Navigate to `http://localhost:5173`
+
+### Production Deployment (Netlify + Supabase)
+
+For shareable PDF links that work for all users:
+
+1. **Follow the complete guide**: See `NETLIFY_DEPLOYMENT.md`
+2. **Setup Supabase**: Create project and storage bucket
+3. **Deploy to Netlify**: Connect GitHub and set environment variables
+4. **Test**: Upload PDFs and verify shareable links work
+
+**Key Benefits of Cloud Deployment:**
+- ✅ PDFs accessible via direct links
+- ✅ Works for all users without local storage
+- ✅ Automatic backups and scaling
+- ✅ Professional hosting with custom domain support
 
 ## Usage
 
@@ -115,9 +140,10 @@ src/
 - Kannada font support with Noto Sans Kannada
 
 ### Data Storage
-- All data stored in browser's localStorage
-- No backend or database required
-- Persistent across browser sessions
+- **Cloud Mode**: All data stored in Supabase (PostgreSQL + Storage)
+- **Local Mode**: Browser's localStorage (fallback)
+- **PDF Files**: Stored in Supabase Storage with public URLs
+- **Shareable Links**: Direct PDF access via Supabase URLs
 
 ## Browser Compatibility
 

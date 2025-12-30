@@ -18,11 +18,13 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
       if (newspaper) {
         try {
           const savedAreas = getClickableAreas(newspaper.id);
-          setAreas(savedAreas);
+          setAreas(Array.isArray(savedAreas) ? savedAreas : []);
         } catch (error) {
           console.error('Error loading areas:', error);
           setAreas([]);
         }
+      } else {
+        setAreas([]);
       }
     };
     
@@ -100,7 +102,7 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
   };
 
   const handleSaveAll = () => {
-    if (areas.length === 0) {
+    if (!Array.isArray(areas) || areas.length === 0) {
       alert('ಉಳಿಸಲು ಪ್ರದೇಶಗಳಿಲ್ಲ. ಮುಂದೆ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ.');
       return;
     }
@@ -160,6 +162,15 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
       )}
       
       <div className="relative inline-block w-full">
+        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-yellow-800">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>ಮೌಸ್ ಡ್ರ್ಯಾಗ್ ಮಾಡಿ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ, ಅನಂತರ ಕ್ಲಿಕ್ ಮಾಡಿ ವಿಷಯ ಸೇರಿಸಿ</span>
+          </div>
+        </div>
+        
         <img
           ref={imageRef}
           src={newspaper.pages ? newspaper.pages[currentPage].imageUrl : newspaper.previewImage}
@@ -171,7 +182,7 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
           draggable={false}
         />
         
-        {areas.filter(area => area.pageNumber === currentPage + 1).map(area => (
+        {Array.isArray(areas) && areas.filter(area => area.pageNumber === currentPage + 1).map(area => (
           <div
             key={area.id}
             className={`clickable-area group cursor-pointer ${
@@ -246,14 +257,14 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
           
           <div className="mb-3">
             <div className="text-sm text-blue-800">
-              ಒಟ್ಟು ಪ್ರದೇಶಗಳು: {areas.length} | ಈ ಪುಟದಲ್ಲಿ: {areas.filter(area => area.pageNumber === currentPage + 1).length}
+              ಒಟ್ಟು ಪ್ರದೇಶಗಳು: {Array.isArray(areas) ? areas.length : 0} | ಈ ಪುಟದಲ್ಲಿ: {Array.isArray(areas) ? areas.filter(area => area.pageNumber === currentPage + 1).length : 0}
             </div>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleSaveAll}
-              disabled={isSaving || areas.length === 0}
+              disabled={isSaving || !Array.isArray(areas) || areas.length === 0}
               className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
             >
               {isSaving ? (
@@ -266,12 +277,12 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
-                  ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಿ ({areas.length})
+                  ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಿ ({Array.isArray(areas) ? areas.length : 0})
                 </>
               )}
             </button>
             
-            {areas.length > 0 && (
+            {Array.isArray(areas) && areas.length > 0 && (
               <>
                 <button
                   onClick={async () => {
@@ -304,7 +315,7 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
           </div>
           
           <p className="text-sm text-blue-700 mt-2">
-            {areas.length === 0 
+            {!Array.isArray(areas) || areas.length === 0 
               ? 'ಮುಂದೆ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ, ಅನಂತರ ಉಳಿಸಿ'
               : 'ಮುಂದೆ ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಿ, ಅನಂತರ ಪ್ರಕಟಿಸಲು ಹೋಗಿ'
             }
@@ -313,7 +324,7 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
         
         <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row gap-2">
           <div className="text-xs sm:text-sm text-gray-600 flex items-center">
-            ಈ ಪುಟದಲ್ಲಿ: {areas.filter(area => area.pageNumber === currentPage + 1).length} ಪ್ರದೇಶಗಳು
+            ಈ ಪುಟದಲ್ಲಿ: {Array.isArray(areas) ? areas.filter(area => area.pageNumber === currentPage + 1).length : 0} ಪ್ರದೇಶಗಳು
           </div>
         </div>
         

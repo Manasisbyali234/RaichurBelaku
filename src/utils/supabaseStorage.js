@@ -5,9 +5,15 @@ let supabase = null;
 // Initialize Supabase client safely
 const initSupabase = () => {
   try {
-    // For now, disable Supabase to avoid environment variable issues
-    console.log('Supabase disabled, using localStorage only');
-    return null;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.REACT_APP_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.REACT_APP_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your-project-id')) {
+      console.log('Supabase not configured, using localStorage only');
+      return null;
+    }
+    
+    return createClient(supabaseUrl, supabaseKey);
   } catch (error) {
     console.error('Failed to initialize Supabase:', error);
     return null;
@@ -22,6 +28,9 @@ const isSupabaseAvailable = () => {
   return supabase !== null;
 };
 
+// Export isSupabaseAvailable function
+export { isSupabaseAvailable };
+
 // Save newspaper
 export const saveNewspaper = async (newspaper, pdfFile = null) => {
   if (!isSupabaseAvailable()) {
@@ -29,6 +38,13 @@ export const saveNewspaper = async (newspaper, pdfFile = null) => {
   }
   
   try {
+    let pdfUrl = null;
+    
+    // Upload PDF file if provided
+    if (pdfFile) {
+      pdfUrl = await uploadPDFFile(pdfFile, newspaper.id);
+    }
+    
     const { data, error } = await supabase
       .from('newspapers')
       .upsert({
@@ -41,6 +57,7 @@ export const saveNewspaper = async (newspaper, pdfFile = null) => {
         width: newspaper.width,
         height: newspaper.height,
         areas: newspaper.areas || [],
+        pdf_url: pdfUrl,
         updated_at: new Date().toISOString()
       });
 
@@ -75,7 +92,8 @@ export const getNewspapers = async () => {
       previewImage: item.preview_image,
       width: item.width,
       height: item.height,
-      areas: item.areas || []
+      areas: item.areas || [],
+      pdfUrl: item.pdf_url
     }));
   } catch (error) {
     console.error('Error getting newspapers:', error);
@@ -103,7 +121,8 @@ export const getNewspaperById = async (id) => {
       previewImage: data.preview_image,
       width: data.width,
       height: data.height,
-      areas: data.areas || []
+      areas: data.areas || [],
+      pdfUrl: data.pdf_url
     };
   } catch (error) {
     console.error('Error getting newspaper:', error);
@@ -214,11 +233,40 @@ export const publishToday = async (newspaperId) => {
   }
 };
 
+// Upload PDF file to Supabase Storage
+export const uploadPDFFile = async (file, newspaperId) => {
+  if (!isSupabaseAvailable()) {
+    throw new Error('Supabase not available');
+  }
+  
+  try {
+    const fileName = `${newspaperId}-${file.name}`;
+    const { data, error } = await supabase.storage
+      .from('newspapers')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) throw error;
+    
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('newspapers')
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading PDF:', error);
+    throw error;
+  }
+};
+
 // Check storage status
 export const getStorageStatus = () => {
   return {
     usingFirebase: false,
-    storageType: 'Supabase Cloud'
+    storageType: isSupabaseAvailable() ? 'Supabase Cloud' : 'Local Storage'
   };
 };
 

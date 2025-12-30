@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getNewspapers } from '../utils/localStorage';
+import { getNewspapers } from '../utils/supabaseStorage';
+import { getNewspapers as getLocalNewspapers } from '../utils/localStorage';
 
 const Archive = () => {
   const [newspapers, setNewspapers] = useState([]);
@@ -11,7 +12,14 @@ const Archive = () => {
   useEffect(() => {
     const loadNewspapers = async () => {
       try {
-        const savedNewspapers = await getNewspapers();
+        // Try Supabase first
+        let savedNewspapers;
+        try {
+          savedNewspapers = await getNewspapers();
+        } catch (error) {
+          console.log('Supabase not available, using localStorage');
+          savedNewspapers = await getLocalNewspapers();
+        }
         setNewspapers(savedNewspapers);
         setFilteredNewspapers(savedNewspapers);
       } catch (error) {
@@ -146,13 +154,24 @@ const Archive = () => {
                     >
                       ಓದಿ
                     </Link>
-                    <a
-                      href={newspaper.pdfData}
-                      download={newspaper.name}
-                      className="flex-1 border border-newspaper-blue text-newspaper-blue text-center py-2 px-3 sm:px-4 rounded-md hover:bg-blue-50 transition-colors text-xs sm:text-sm"
-                    >
-                      ಡೌನ್ಲೋಡ್
-                    </a>
+                    {newspaper.pdfUrl ? (
+                      <a
+                        href={newspaper.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 border border-newspaper-blue text-newspaper-blue text-center py-2 px-3 sm:px-4 rounded-md hover:bg-blue-50 transition-colors text-xs sm:text-sm"
+                      >
+                        PDF ನೋಡಿ
+                      </a>
+                    ) : (
+                      <a
+                        href={newspaper.pdfData}
+                        download={newspaper.name}
+                        className="flex-1 border border-newspaper-blue text-newspaper-blue text-center py-2 px-3 sm:px-4 rounded-md hover:bg-blue-50 transition-colors text-xs sm:text-sm"
+                      >
+                        ಡೌನ್ಲೋಡ್
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

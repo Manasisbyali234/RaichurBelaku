@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { convertAllPDFPagesToImages, savePDFFile } from '../utils/pdfUtils';
-import { saveNewspaper, getStorageStatus } from '../utils/localStorage';
+import { convertAllPDFPagesToImages } from '../utils/pdfUtils';
+import { saveNewspaper, getStorageStatus } from '../utils/supabaseStorage';
+import { saveNewspaper as saveLocalNewspaper, getStorageStatus as getLocalStorageStatus } from '../utils/localStorage';
 
 const AdminUploadPDF = ({ onUploadSuccess }) => {
   const [uploading, setUploading] = useState(false);
@@ -39,8 +40,21 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
         areas: []
       };
       
-      // Auto-save immediately
-      const savedId = await saveNewspaper(newspaper);
+      // Auto-save immediately with PDF file
+      let savedId;
+      let storageStatus;
+      
+      try {
+        // Try Supabase first if available
+        savedId = await saveNewspaper(newspaper, file);
+        storageStatus = await getStorageStatus();
+      } catch (error) {
+        console.log('Supabase not available, using localStorage:', error.message);
+        // Fallback to localStorage
+        savedId = await saveLocalNewspaper(newspaper);
+        storageStatus = await getLocalStorageStatus();
+      }
+      
       const savedNewspaper = { ...newspaper, id: savedId };
       
       // Reset form
@@ -48,8 +62,6 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
       if (fileInput) fileInput.value = '';
       
       onUploadSuccess(savedNewspaper);
-      
-      const storageStatus = await getStorageStatus();
       alert(`ಪತ್ರಿಕೆ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್ಲೋಡ್ ಆಗಿದೆ! (${storageStatus.storageType})`);
     } catch (error) {
       console.error('Upload error:', error);

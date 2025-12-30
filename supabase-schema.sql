@@ -9,6 +9,7 @@ CREATE TABLE newspapers (
   width INTEGER,
   height INTEGER,
   areas JSONB DEFAULT '[]'::jsonb,
+  pdf_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

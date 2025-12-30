@@ -4,7 +4,18 @@ import * as supabaseStorage from './supabaseStorage';
 const NEWSPAPERS_KEY = 'newspapers';
 const TODAY_KEY = 'todaysNewspaper';
 
-// Check if we should use Supabase (production) or localStorage (development)
+// Safe JSON parse helper
+const safeJsonParse = (str, fallback = null) => {
+  try {
+    if (!str || str.trim() === '') return fallback;
+    return JSON.parse(str);
+  } catch (error) {
+    console.error('JSON parse error:', error);
+    return fallback;
+  }
+};
+
+// Check if we should use Supabase
 const useSupabase = () => {
   // For now, always use localStorage to avoid Supabase dependency
   return false;
@@ -25,17 +36,7 @@ export const saveNewspaper = (newspaper, pdfFile = null) => {
       newspapers.push({ ...optimizedNewspaper, updatedAt: new Date().toISOString() });
     }
     
-    // Check storage size and auto-cleanup if needed
-    const testData = JSON.stringify(newspapers);
-    if (testData.length > 2 * 1024 * 1024) { // 2MB limit
-      // Keep only the 2 most recent newspapers
-      const sorted = newspapers.sort((a, b) => new Date(b.date) - new Date(a.date));
-      const cleaned = sorted.slice(0, 2);
-      localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(cleaned));
-      throw new Error('ಸ್ಟೋರೇಜ್ ಸ್ಥಳ ಕಡಿಮೆ. ಹಳೆಯ ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.');
-    }
-    
-    localStorage.setItem(NEWSPAPERS_KEY, testData);
+    localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(newspapers));
     return newspaper.id;
   } catch (error) {
     if (error.name === 'QuotaExceededError') {
@@ -58,10 +59,8 @@ export const saveNewspaper = (newspaper, pdfFile = null) => {
 export const getNewspapers = () => {
   try {
     const stored = localStorage.getItem(NEWSPAPERS_KEY);
-    if (!stored) return [];
-    
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [];
+    const newspapers = safeJsonParse(stored, []);
+    return Array.isArray(newspapers) ? newspapers : [];
   } catch (error) {
     console.error('Error getting newspapers:', error);
     localStorage.removeItem(NEWSPAPERS_KEY);
@@ -135,15 +134,13 @@ export const getClickableAreas = (newspaperId) => {
 };
 
 // Get today's newspaper
-export const getTodaysNewspaper = () => {
+export const getTodaysNewspaper = async () => {
   try {
     const stored = localStorage.getItem(TODAY_KEY);
-    if (!stored) return null;
-    
-    const todayData = JSON.parse(stored);
+    const todayData = safeJsonParse(stored, null);
     if (!todayData || !todayData.newspaperId) return null;
     
-    return getNewspaperById(todayData.newspaperId);
+    return await getNewspaperById(todayData.newspaperId);
   } catch (error) {
     console.error('Error getting today\'s newspaper:', error);
     localStorage.removeItem(TODAY_KEY);
@@ -324,7 +321,12 @@ export const restoreFromBackup = async (file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = JSON.parse(e.target.result);
+        const data = safeJsonParse(e.target.result, null);
+        if (!data) {
+          reject(new Error('Invalid backup file format'));
+          return;
+        }
+        
         if (data.newspapers) {
           localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(data.newspapers));
         }

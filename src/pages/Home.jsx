@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getTodaysNewspaper } from '../utils/localStorage';
+import ClickableAreasDemo from '../components/ClickableAreasDemo';
 
 const Home = () => {
   const [todaysNewspaper, setTodaysNewspaper] = useState(null);
@@ -8,11 +9,11 @@ const Home = () => {
   const [error, setError] = useState(null);
   
   useEffect(() => {
-    const loadTodaysNewspaper = () => {
+    const loadTodaysNewspaper = async () => {
       try {
         setLoading(true);
         setError(null);
-        const newspaper = getTodaysNewspaper();
+        const newspaper = await getTodaysNewspaper();
         console.log('Loading today\'s newspaper:', newspaper);
         setTodaysNewspaper(newspaper);
       } catch (err) {
@@ -69,11 +70,11 @@ const Home = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">ಇಂದಿನ ಮುಖ್ಯ ಸುದ್ದಿಗಳು</h2>
           <div className="w-24 h-1 bg-newspaper-red mx-auto mb-4"></div>
           <button
-            onClick={() => {
+            onClick={async () => {
               try {
                 setLoading(true);
                 setError(null);
-                const newspaper = getTodaysNewspaper();
+                const newspaper = await getTodaysNewspaper();
                 console.log('Manual refresh - today\'s newspaper:', newspaper);
                 setTodaysNewspaper(newspaper);
               } catch (err) {
@@ -197,6 +198,11 @@ const Home = () => {
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">ಸಂಗ್ರಹಿತ ಪತ್ರಿಕೆಗಳು</h3>
               <p className="text-sm sm:text-base text-gray-600 px-2">ಹಿಂದಿನ ಎಲ್ಲಾ ಆವೃತ್ತಿಗಳನ್ನು ಸುಲಭವಾಗಿ ಪ್ರವೇಶಿಸಿ</p>
             </div>
+          </div>
+          
+          {/* Demo Section */}
+          <div className="mt-12">
+            <ClickableAreasDemo />
           </div>
         </div>
       </div>

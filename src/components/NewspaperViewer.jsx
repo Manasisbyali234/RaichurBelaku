@@ -104,6 +104,8 @@ const NewspaperViewer = ({ newspaper }) => {
               </div>
             </div>
           </div>
+          
+
         </div>
       </div>
 
@@ -158,16 +160,12 @@ const NewspaperViewer = ({ newspaper }) => {
                 {areas.filter(area => area.pageNumber === currentPage + 1).map(area => (
                   <div
                     key={area.id}
+                    className="absolute cursor-pointer"
                     style={{
-                      position: 'absolute',
                       left: `${area.x}px`,
                       top: `${area.y}px`,
                       width: `${Math.abs(area.width)}px`,
-                      height: `${Math.abs(area.height)}px`,
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer',
-                      zIndex: 100,
-                      pointerEvents: 'auto'
+                      height: `${Math.abs(area.height)}px`
                     }}
                     onClick={(e) => {
                       e.preventDefault();

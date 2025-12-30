@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getNewspapers } from '../utils/supabaseStorage';
 import { getNewspapers as getLocalNewspapers } from '../utils/localStorage';
+import PDFLinkTest from '../components/PDFLinkTest';
 
 const Archive = () => {
   const [newspapers, setNewspapers] = useState([]);
@@ -173,6 +174,8 @@ const Archive = () => {
                       </a>
                     )}
                   </div>
+                  {/* PDF Link Test for debugging */}
+                  <PDFLinkTest pdfUrl={newspaper.pdfUrl} />
                 </div>
               </div>
             ))}

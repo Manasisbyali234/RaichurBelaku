@@ -5,6 +5,7 @@ import AdminLogin from '../components/AdminLogin';
 import StorageStatus from '../components/StorageStatus';
 import ErrorBoundary from '../components/ErrorBoundary';
 import DataMigration from '../components/DataMigration';
+import SupabaseDebug from '../components/SupabaseDebug';
 import { 
   getNewspapers, 
   publishToday, 
@@ -169,6 +170,9 @@ const AdminDashboard = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Supabase Debug - Always visible for troubleshooting */}
+          <SupabaseDebug />
+          
           {/* Storage Status - Always visible */}
           <StorageStatus onDataChange={loadNewspapers} />
           

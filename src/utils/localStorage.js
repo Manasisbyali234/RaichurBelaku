@@ -1,4 +1,13 @@
+import * as supabaseStorage from './supabaseStorage';
+
 const API_BASE = '/.netlify/functions';
+const NEWSPAPERS_KEY = 'raichuru-newspapers';
+const TODAY_KEY = 'raichuru-today';
+
+// Check if we should use Supabase
+const useSupabase = () => {
+  return false; // Disabled for now
+};
 
 // API helper
 const apiCall = async (endpoint, method = 'GET', data = null) => {

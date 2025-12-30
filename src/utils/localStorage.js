@@ -6,18 +6,13 @@ const TODAY_KEY = 'todaysNewspaper';
 
 // Check if we should use Supabase (production) or localStorage (development)
 const useSupabase = () => {
-  return process.env.NODE_ENV === 'production' || 
-         (process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY);
+  // For now, always use localStorage to avoid Supabase dependency
+  return false;
 };
 
 // Save newspaper with storage optimization
-export const saveNewspaper = async (newspaper, pdfFile = null) => {
-  if (useSupabase()) {
-    return await supabaseStorage.saveNewspaper(newspaper, pdfFile);
-  }
-  
+export const saveNewspaper = (newspaper, pdfFile = null) => {
   try {
-    // Don't store PDF data to save space
     const optimizedNewspaper = { ...newspaper };
     delete optimizedNewspaper.pdfData;
     
@@ -30,15 +25,14 @@ export const saveNewspaper = async (newspaper, pdfFile = null) => {
       newspapers.push({ ...optimizedNewspaper, updatedAt: new Date().toISOString() });
     }
     
-    // Check storage size before saving
+    // Check storage size and auto-cleanup if needed
     const testData = JSON.stringify(newspapers);
-    if (testData.length > 3 * 1024 * 1024) { // 3MB limit (reduced from 4.5MB)
-      // Auto-cleanup: keep only 2 most recent newspapers
+    if (testData.length > 2 * 1024 * 1024) { // 2MB limit
+      // Keep only the 2 most recent newspapers
       const sorted = newspapers.sort((a, b) => new Date(b.date) - new Date(a.date));
       const cleaned = sorted.slice(0, 2);
-      const deletedCount = newspapers.length - 2;
       localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(cleaned));
-      throw new Error(`ಸ್ಟೋರೇಜ್ ಸ್ಥಳ ನಿಂದಿದೆ. ${deletedCount} ಹಳೆಯ ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.`);
+      throw new Error('ಸ್ಟೋರೇಜ್ ಸ್ಥಳ ಕಡಿಮೆ. ಹಳೆಯ ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.');
     }
     
     localStorage.setItem(NEWSPAPERS_KEY, testData);
@@ -46,48 +40,39 @@ export const saveNewspaper = async (newspaper, pdfFile = null) => {
   } catch (error) {
     if (error.name === 'QuotaExceededError') {
       // Emergency cleanup - keep only 1 newspaper
-      try {
-        const newspapers = getNewspapers();
-        if (newspapers.length > 0) {
-          const latest = newspapers.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-          localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify([latest]));
-          throw new Error('ಎಮರ್ಜೆನ್ಸಿ ಕ್ಲೀನಪ್: ಕೊನೆಯ ಪತ್ರಿಕೆ ಮಾತ್ರ ಉಳಿಸಲಾಗಿದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.');
-        } else {
-          localStorage.clear();
-          throw new Error('ಸ್ಟೋರೇಜ್ ಕ್ಲಿಯರ್ ಮಾಡಲಾಗಿದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.');
-        }
-      } catch (clearError) {
-        throw new Error('ಸ್ಟೋರೇಜ್ ಸಮಸ್ಯೆ. ಬ್ರೌಸರ್ ರೀಸ್ಟಾರ್ಟ್ ಮಾಡಿ.');
+      const newspapers = getNewspapers();
+      if (newspapers.length > 0) {
+        const latest = newspapers.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+        localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify([latest]));
+        throw new Error('ಸ್ಟೋರೇಜ್ ಪೂರ್ಣ. ಕೊನೆಯ ಪತ್ರಿಕೆ ಮಾತ್ರ ಉಳಿಸಲಾಗಿದೆ.');
+      } else {
+        localStorage.clear();
+        throw new Error('ಸ್ಟೋರೇಜ್ ಕ್ಲಿಯರ್ ಮಾಡಲಾಗಿದೆ.');
       }
     }
-    console.error('Error saving newspaper:', error);
     throw error;
   }
 };
 
 // Get all newspapers
-export const getNewspapers = async () => {
-  if (useSupabase()) {
-    return await supabaseStorage.getNewspapers();
-  }
-  
+export const getNewspapers = () => {
   try {
     const stored = localStorage.getItem(NEWSPAPERS_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     console.error('Error getting newspapers:', error);
+    localStorage.removeItem(NEWSPAPERS_KEY);
     return [];
   }
 };
 
 // Get newspaper by ID
-export const getNewspaperById = async (id) => {
-  if (useSupabase()) {
-    return await supabaseStorage.getNewspaperById(id);
-  }
-  
+export const getNewspaperById = (id) => {
   try {
-    const newspapers = await getNewspapers();
+    const newspapers = getNewspapers();
     return newspapers.find(n => n.id === id) || null;
   } catch (error) {
     console.error('Error getting newspaper:', error);
@@ -120,13 +105,9 @@ export const deleteNewspaper = async (id) => {
 };
 
 // Save clickable areas
-export const saveClickableAreas = async (newspaperId, areas) => {
-  if (useSupabase()) {
-    return await supabaseStorage.saveClickableAreas(newspaperId, areas);
-  }
-  
+export const saveClickableAreas = (newspaperId, areas) => {
   try {
-    const newspapers = await getNewspapers();
+    const newspapers = getNewspapers();
     const index = newspapers.findIndex(n => n.id === newspaperId);
     
     if (index >= 0) {
@@ -143,13 +124,9 @@ export const saveClickableAreas = async (newspaperId, areas) => {
 };
 
 // Get clickable areas
-export const getClickableAreas = async (newspaperId) => {
-  if (useSupabase()) {
-    return await supabaseStorage.getClickableAreas(newspaperId);
-  }
-  
+export const getClickableAreas = (newspaperId) => {
   try {
-    const newspaper = await getNewspaperById(newspaperId);
+    const newspaper = getNewspaperById(newspaperId);
     return newspaper?.areas || [];
   } catch (error) {
     console.error('Error getting areas:', error);
@@ -158,20 +135,18 @@ export const getClickableAreas = async (newspaperId) => {
 };
 
 // Get today's newspaper
-export const getTodaysNewspaper = async () => {
-  if (useSupabase()) {
-    return await supabaseStorage.getTodaysNewspaper();
-  }
-  
+export const getTodaysNewspaper = () => {
   try {
     const stored = localStorage.getItem(TODAY_KEY);
-    if (stored) {
-      const todayData = JSON.parse(stored);
-      return await getNewspaperById(todayData.newspaperId);
-    }
-    return null;
+    if (!stored) return null;
+    
+    const todayData = JSON.parse(stored);
+    if (!todayData || !todayData.newspaperId) return null;
+    
+    return getNewspaperById(todayData.newspaperId);
   } catch (error) {
     console.error('Error getting today\'s newspaper:', error);
+    localStorage.removeItem(TODAY_KEY);
     return null;
   }
 };
@@ -369,17 +344,31 @@ export const restoreFromBackup = async (file) => {
 // Test localStorage functionality
 export const testLocalStorage = async () => {
   if (useSupabase()) {
-    return await supabaseStorage.testLocalStorage();
+    try {
+      return await supabaseStorage.testLocalStorage();
+    } catch (error) {
+      console.error('Supabase test failed, testing localStorage:', error);
+      // Continue to test localStorage
+    }
   }
   
   try {
+    // Check if localStorage is available
+    if (typeof Storage === 'undefined' || !window.localStorage) {
+      console.error('localStorage is not available');
+      return false;
+    }
+    
     const testKey = 'test-' + Date.now();
     const testValue = 'test-value';
+    
     localStorage.setItem(testKey, testValue);
     const retrieved = localStorage.getItem(testKey);
     localStorage.removeItem(testKey);
-    console.log('localStorage test:', retrieved === testValue ? 'PASS' : 'FAIL');
-    return retrieved === testValue;
+    
+    const success = retrieved === testValue;
+    console.log('localStorage test:', success ? 'PASS' : 'FAIL');
+    return success;
   } catch (error) {
     console.error('localStorage test failed:', error);
     return false;

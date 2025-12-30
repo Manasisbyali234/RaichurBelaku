@@ -7,7 +7,8 @@ export default defineConfig({
     include: ['pdfjs-dist']
   },
   define: {
-    global: 'globalThis'
+    global: 'globalThis',
+    'process.env': {}
   },
   build: {
     rollupOptions: {

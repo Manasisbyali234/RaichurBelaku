@@ -8,21 +8,29 @@ const TestPage = () => {
   const [pdfWorkerStatus, setPdfWorkerStatus] = useState('ಪರೀಕ್ಷಿಸಲಾಗುತ್ತಿದೆ...');
 
   useEffect(() => {
-    // Test localStorage
-    const localStorageWorks = testLocalStorage();
-    setStatus(localStorageWorks ? 'localStorage ಕೆಲಸ ಮಾಡುತ್ತಿದೆ ✓' : 'localStorage ಸಮಸ್ಯೆ ✗');
-    
-    // Test PDF.js worker
-    try {
-      import('pdfjs-dist').then(pdfjsLib => {
+    const runTests = async () => {
+      try {
+        // Test localStorage
+        const localStorageWorks = await testLocalStorage();
+        setStatus(localStorageWorks ? 'localStorage ಕೆಲಸ ಮಾಡುತ್ತಿದೆ ✓' : 'localStorage ಸಮಸ್ಯೆ ✗');
+      } catch (error) {
+        setStatus('localStorage ಪರೀಕ್ಷೆಯಲ್ಲಿ ದೋಷ: ' + error.message);
+      }
+      
+      // Test PDF.js worker
+      try {
+        const pdfjsLib = await import('pdfjs-dist');
         setPdfWorkerStatus(`PDF.js ಲೋಡ್ ಆಗಿದೆ ✓ (v${pdfjsLib.version})`);
-      });
-    } catch (error) {
-      setPdfWorkerStatus('PDF.js ಲೋಡ್ ಆಗಲಿಲ್ಲ ✗');
-    }
+      } catch (error) {
+        console.error('PDF.js load error:', error);
+        setPdfWorkerStatus('PDF.js ಲೋಡ್ ಆಗಲಿಲ್ಲ ✗');
+      }
+      
+      // Load existing newspapers
+      await loadNewspapers();
+    };
     
-    // Load existing newspapers
-    loadNewspapers();
+    runTests();
   }, []);
 
   const loadNewspapers = async () => {
@@ -45,6 +53,10 @@ const TestPage = () => {
     try {
       const result = await convertPDFToImage(file);
       
+      if (!result || !result.imageUrl) {
+        throw new Error('PDF conversion failed - no image generated');
+      }
+      
       const testNewspaper = {
         id: 'test-' + Date.now(),
         name: file.name,
@@ -62,12 +74,17 @@ const TestPage = () => {
         areas: []
       };
 
-      await saveNewspaper(testNewspaper);
+      const savedId = await saveNewspaper(testNewspaper);
+      if (!savedId) {
+        throw new Error('Failed to save newspaper');
+      }
+      
       await loadNewspapers();
       
       setStatus('ಯಶಸ್ವಿ! PDF ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಿ localStorage ನಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ ✓');
     } catch (error) {
-      setStatus('ದೋಷ: ' + error.message);
+      console.error('PDF test error:', error);
+      setStatus('ದೋಷ: ' + (error.message || 'Unknown error'));
     }
   };
 

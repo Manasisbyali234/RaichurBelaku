@@ -2,8 +2,13 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure PDF.js worker for both development and production
 if (typeof window !== 'undefined') {
-  // Use CDN worker that works everywhere
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+  try {
+    // Use CDN worker that works everywhere
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+    console.log('✓ PDF.js worker configured successfully');
+  } catch (error) {
+    console.error('Failed to configure PDF.js worker:', error);
+  }
 }
 
 
@@ -11,6 +16,10 @@ if (typeof window !== 'undefined') {
 export const convertPDFToImage = async (pdfFile) => {
   try {
     console.log('Converting PDF to image:', pdfFile.name);
+    
+    if (!pdfFile || pdfFile.type !== 'application/pdf') {
+      throw new Error('Invalid PDF file');
+    }
     
     const arrayBuffer = await pdfFile.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({
@@ -28,6 +37,11 @@ export const convertPDFToImage = async (pdfFile) => {
     
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+    
+    if (!context) {
+      throw new Error('Failed to get canvas context');
+    }
+    
     canvas.height = viewport.height;
     canvas.width = viewport.width;
     
@@ -55,6 +69,10 @@ export const convertPDFToImage = async (pdfFile) => {
 export const convertAllPDFPagesToImages = async (pdfFile) => {
   try {
     console.log('Starting PDF conversion for:', pdfFile.name);
+    
+    if (!pdfFile || pdfFile.type !== 'application/pdf') {
+      throw new Error('Invalid PDF file');
+    }
     
     const arrayBuffer = await pdfFile.arrayBuffer();
     console.log('PDF arrayBuffer created, size:', arrayBuffer.byteLength);
@@ -84,6 +102,11 @@ export const convertAllPDFPagesToImages = async (pdfFile) => {
       
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
+      
+      if (!context) {
+        throw new Error(`Failed to get canvas context for page ${pageNum}`);
+      }
+      
       canvas.height = viewport.height;
       canvas.width = viewport.width;
       
@@ -133,12 +156,25 @@ export const convertAllPDFPagesToImages = async (pdfFile) => {
 
 export const savePDFFile = (file) => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      resolve(e.target.result);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    try {
+      if (!file) {
+        reject(new Error('No file provided'));
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        resolve(e.target.result);
+      };
+      reader.onerror = (error) => {
+        console.error('FileReader error:', error);
+        reject(error);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error in savePDFFile:', error);
+      reject(error);
+    }
   });
 };
 

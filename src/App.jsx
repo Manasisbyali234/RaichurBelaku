@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -11,6 +12,7 @@ import NewsTab from './components/NewsTab';
 
 function App() {
   useEffect(() => {
+    console.log('App component mounted');
     // Check localStorage availability on app start
     if (typeof Storage === 'undefined' || !window.localStorage) {
       console.error('localStorage is not available!');
@@ -28,31 +30,32 @@ function App() {
       }
     }
   }, []);
+  
   return (
-    <Router>
-      <div className="App font-kannada">
-        <Routes>
-          {/* News article route (opens in new tab) */}
-          <Route path="/news/:newspaperId/:areaId" element={<NewsTab />} />
-          
-          {/* Main application routes with navbar */}
-          <Route path="/*" element={
-            <>
-              <Navbar />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/today" element={<NewsPage />} />
-                <Route path="/archive" element={<Archive />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/test" element={<TestPage />} />
-                <Route path="/newspaper/:newspaperId" element={<NewsPage />} />
-              </Routes>
-              <Footer />
-            </>
-          } />
-        </Routes>
-      </div>
-    </Router>
+    <ErrorBoundary>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <div className="App font-kannada">
+          <Routes>
+            <Route path="/news/:newspaperId/:areaId" element={<NewsTab />} />
+            
+            <Route path="/*" element={
+              <>
+                <Navbar />
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/today" element={<NewsPage />} />
+                  <Route path="/archive" element={<Archive />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/test" element={<TestPage />} />
+                  <Route path="/newspaper/:newspaperId" element={<NewsPage />} />
+                </Routes>
+                <Footer />
+              </>
+            } />
+          </Routes>
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

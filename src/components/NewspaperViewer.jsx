@@ -10,10 +10,10 @@ const NewspaperViewer = ({ newspaper }) => {
   const imageRef = useRef(null);
 
   useEffect(() => {
-    const loadAreas = async () => {
+    const loadAreas = () => {
       if (newspaper) {
         try {
-          const clickableAreas = newspaper.areas || await getClickableAreas(newspaper.id) || [];
+          const clickableAreas = newspaper.areas || getClickableAreas(newspaper.id) || [];
           console.log('Loading areas for newspaper:', newspaper.id, 'Areas:', clickableAreas);
           console.log('Current page:', currentPage + 1);
           console.log('Areas for current page:', clickableAreas.filter(area => area.pageNumber === currentPage + 1));

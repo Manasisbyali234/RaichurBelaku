@@ -1,11 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'your-anon-key';
-const supabase = createClient(supabaseUrl, supabaseKey);
+let supabase = null;
+
+// Initialize Supabase client safely
+const initSupabase = () => {
+  try {
+    // For now, disable Supabase to avoid environment variable issues
+    console.log('Supabase disabled, using localStorage only');
+    return null;
+  } catch (error) {
+    console.error('Failed to initialize Supabase:', error);
+    return null;
+  }
+};
+
+// Initialize on module load
+supabase = initSupabase();
+
+// Check if Supabase is available
+const isSupabaseAvailable = () => {
+  return supabase !== null;
+};
 
 // Save newspaper
 export const saveNewspaper = async (newspaper, pdfFile = null) => {
+  if (!isSupabaseAvailable()) {
+    throw new Error('Supabase not available');
+  }
+  
   try {
     const { data, error } = await supabase
       .from('newspapers')
@@ -32,6 +54,10 @@ export const saveNewspaper = async (newspaper, pdfFile = null) => {
 
 // Get all newspapers
 export const getNewspapers = async () => {
+  if (!isSupabaseAvailable()) {
+    throw new Error('Supabase not available');
+  }
+  
   try {
     const { data, error } = await supabase
       .from('newspapers')
@@ -53,7 +79,7 @@ export const getNewspapers = async () => {
     }));
   } catch (error) {
     console.error('Error getting newspapers:', error);
-    return [];
+    throw error;
   }
 };
 
@@ -286,6 +312,10 @@ export const restoreFromBackup = async (file) => {
 
 // Test functionality
 export const testLocalStorage = async () => {
+  if (!isSupabaseAvailable()) {
+    throw new Error('Supabase not available');
+  }
+  
   try {
     const testNewspaper = {
       id: 'test-' + Date.now(),
@@ -304,7 +334,7 @@ export const testLocalStorage = async () => {
     return !!retrieved;
   } catch (error) {
     console.error('Supabase test failed:', error);
-    return false;
+    throw error;
   }
 };
 

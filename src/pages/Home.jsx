@@ -4,18 +4,29 @@ import { getTodaysNewspaper } from '../utils/localStorage';
 
 const Home = () => {
   const [todaysNewspaper, setTodaysNewspaper] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   useEffect(() => {
     const loadTodaysNewspaper = () => {
-      const newspaper = getTodaysNewspaper();
-      console.log('Loading today\'s newspaper:', newspaper);
-      setTodaysNewspaper(newspaper);
+      try {
+        setLoading(true);
+        setError(null);
+        const newspaper = getTodaysNewspaper();
+        console.log('Loading today\'s newspaper:', newspaper);
+        setTodaysNewspaper(newspaper);
+      } catch (err) {
+        console.error('Error loading today\'s newspaper:', err);
+        setError(err.message || 'Failed to load newspaper');
+      } finally {
+        setLoading(false);
+      }
     };
     
     loadTodaysNewspaper();
     
-    // Refresh every 10 seconds to catch new publications
-    const interval = setInterval(loadTodaysNewspaper, 10000);
+    // Refresh every 30 seconds to catch new publications
+    const interval = setInterval(loadTodaysNewspaper, 30000);
     
     return () => clearInterval(interval);
   }, []);
@@ -59,17 +70,43 @@ const Home = () => {
           <div className="w-24 h-1 bg-newspaper-red mx-auto mb-4"></div>
           <button
             onClick={() => {
-              const newspaper = getTodaysNewspaper();
-              console.log('Manual refresh - today\'s newspaper:', newspaper);
-              setTodaysNewspaper(newspaper);
+              try {
+                setLoading(true);
+                setError(null);
+                const newspaper = getTodaysNewspaper();
+                console.log('Manual refresh - today\'s newspaper:', newspaper);
+                setTodaysNewspaper(newspaper);
+              } catch (err) {
+                console.error('Error refreshing newspaper:', err);
+                setError(err.message || 'Failed to refresh');
+              } finally {
+                setLoading(false);
+              }
             }}
-            className="text-sm text-blue-600 hover:text-blue-800 underline"
+            className="text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
+            disabled={loading}
           >
-            ರಿಫ್ರೆಶ್ ಮಾಡಿ
+            {loading ? 'ಲೋಡ್ ಆಗುತ್ತಿದೆ...' : 'ರಿಫ್ರೆಶ್ ಮಾಡಿ'}
           </button>
         </div>
 
-        {todaysNewspaper ? (
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <p className="text-red-700 text-sm">ದೋಷ: {error}</p>
+            </div>
+          </div>
+        )}
+
+        {loading && !todaysNewspaper ? (
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-newspaper-blue mx-auto mb-4"></div>
+            <p className="text-gray-600">ಲೋಡ್ ಆಗುತ್ತಿದೆ...</p>
+          </div>
+        ) : todaysNewspaper ? (
           <div className="space-y-8">
             {/* Main Newspaper Display */}
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -182,14 +219,36 @@ const Home = () => {
 // Component to display today's news headlines
 const TodaysHeadlines = ({ newspaper }) => {
   const [areas, setAreas] = React.useState([]);
+  const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
-    if (newspaper && newspaper.areas) {
-      // Filter areas that have titles (actual news)
-      const newsAreas = newspaper.areas.filter(area => area.title && area.title.trim());
-      setAreas(newsAreas);
+    try {
+      if (newspaper && newspaper.areas) {
+        // Filter areas that have titles (actual news)
+        const newsAreas = newspaper.areas.filter(area => 
+          area && area.title && area.title.trim()
+        );
+        setAreas(newsAreas);
+        setError(null);
+      } else {
+        setAreas([]);
+      }
+    } catch (err) {
+      console.error('Error processing news areas:', err);
+      setError(err.message);
+      setAreas([]);
     }
   }, [newspaper]);
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="text-center text-red-600">
+          <p>ಸುದ್ದಿಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ: {error}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (areas.length === 0) {
     return null;

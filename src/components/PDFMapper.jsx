@@ -14,10 +14,10 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
   const imageRef = useRef(null);
 
   useEffect(() => {
-    const loadAreas = async () => {
+    const loadAreas = () => {
       if (newspaper) {
         try {
-          const savedAreas = await getClickableAreas(newspaper.id);
+          const savedAreas = getClickableAreas(newspaper.id);
           setAreas(savedAreas);
         } catch (error) {
           console.error('Error loading areas:', error);
@@ -99,7 +99,7 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
     setSelectedArea(null);
   };
 
-  const handleSaveAll = async () => {
+  const handleSaveAll = () => {
     if (areas.length === 0) {
       alert('ಉಳಿಸಲು ಪ್ರದೇಶಗಳಿಲ್ಲ. ಮುಂದೆ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ.');
       return;
@@ -107,10 +107,8 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
 
     setIsSaving(true);
     console.log('Saving areas for newspaper:', newspaper.id, 'Areas count:', areas.length);
-    console.log('Areas data:', areas);
     
     try {
-      // Validate areas before saving
       const validAreas = areas.filter(area => 
         area.id && 
         typeof area.x === 'number' && 
@@ -121,44 +119,27 @@ const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday
         Math.abs(area.height) > 10
       );
       
-      console.log('Valid areas count:', validAreas.length);
-      
       if (validAreas.length === 0) {
         alert('ಮಾನ್ಯವಾದ ಪ್ರದೇಶಗಳಿಲ್ಲ. ದಯವಿಟ್ಟು ಪುನಃ ಪ್ರಯತ್ನಿಸಿ.');
         setIsSaving(false);
         return;
       }
       
-      const success = await saveClickableAreas(newspaper.id, validAreas);
-      console.log('Save areas result:', success);
+      const success = saveClickableAreas(newspaper.id, validAreas);
       
       if (success) {
         alert(`${validAreas.length} ಪ್ರದೇಶಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ!`);
-        
-        // Update local state with saved areas
         setAreas(validAreas);
         
-        // Call refresh callback without navigation
         if (onAreasSaved) {
-          console.log('Calling onAreasSaved callback');
-          try {
-            await onAreasSaved();
-          } catch (callbackError) {
-            console.error('Callback error:', callbackError);
-          }
+          onAreasSaved();
         }
       } else {
         alert('ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
       }
     } catch (error) {
       console.error('Error saving areas:', error);
-      let errorMessage = 'ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!';
-      
-      if (error.message?.includes('network')) {
-        errorMessage += '\nನೆಟ್ವರ್ಕ್ ಸಮಸ್ಯೆ. ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ.';
-      }
-      
-      alert(errorMessage);
+      alert('ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
     } finally {
       setIsSaving(false);
     }

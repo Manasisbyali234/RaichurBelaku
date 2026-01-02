@@ -17,8 +17,8 @@ const safeJsonParse = (str, fallback = null) => {
 
 // Check if we should use Supabase
 const useSupabase = () => {
-  // For now, always use localStorage to avoid Supabase dependency
-  return false;
+  // Use Supabase if properly configured
+  return supabaseStorage.isSupabaseAvailable();
 };
 
 // Save newspaper with storage optimization
@@ -86,12 +86,12 @@ export const deleteNewspaper = async (id) => {
   }
   
   try {
-    const newspapers = await getNewspapers();
+    const newspapers = getNewspapers();
     const filtered = newspapers.filter(n => n.id !== id);
     localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(filtered));
     
     // Clear from today's newspaper if it's the current one
-    const todaysNewspaper = await getTodaysNewspaper();
+    const todaysNewspaper = getTodaysNewspaper();
     if (todaysNewspaper && todaysNewspaper.id === id) {
       localStorage.removeItem(TODAY_KEY);
     }
@@ -134,13 +134,19 @@ export const getClickableAreas = (newspaperId) => {
 };
 
 // Get today's newspaper
-export const getTodaysNewspaper = async () => {
+export const getTodaysNewspaper = () => {
   try {
     const stored = localStorage.getItem(TODAY_KEY);
     const todayData = safeJsonParse(stored, null);
     if (!todayData || !todayData.newspaperId) return null;
     
-    return await getNewspaperById(todayData.newspaperId);
+    const newspaper = getNewspaperById(todayData.newspaperId);
+    if (newspaper) {
+      // Ensure areas are loaded
+      const areas = getClickableAreas(newspaper.id);
+      return { ...newspaper, areas };
+    }
+    return null;
   } catch (error) {
     console.error('Error getting today\'s newspaper:', error);
     localStorage.removeItem(TODAY_KEY);
@@ -173,7 +179,7 @@ export const publishToday = async (newspaperId) => {
   }
   
   try {
-    const newspaper = await getNewspaperById(newspaperId);
+    const newspaper = getNewspaperById(newspaperId);
     if (newspaper) {
       await setTodaysNewspaper(newspaper);
       return true;
@@ -201,7 +207,7 @@ export const getStorageStatus = () => {
 export const getStorageInfo = async () => {
   if (useSupabase()) {
     try {
-      const newspapers = await getNewspapers();
+      const newspapers = getNewspapers();
       return {
         newspaperCount: newspapers.length,
         usedBytes: 0,
@@ -223,7 +229,7 @@ export const getStorageInfo = async () => {
   }
   
   try {
-    const newspapers = await getNewspapers();
+    const newspapers = getNewspapers();
     const dataSize = JSON.stringify(newspapers).length;
     const maxSize = 5 * 1024 * 1024; // 5MB estimate
     
@@ -254,7 +260,7 @@ export const cleanupOldNewspapers = async (keepCount = 2) => {
   }
   
   try {
-    const newspapers = await getNewspapers();
+    const newspapers = getNewspapers();
     if (newspapers.length <= keepCount) return 0;
     
     const sorted = newspapers.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -292,7 +298,7 @@ export const createBackup = async () => {
   
   try {
     const data = {
-      newspapers: await getNewspapers(),
+      newspapers: getNewspapers(),
       todaysNewspaper: localStorage.getItem(TODAY_KEY),
       timestamp: new Date().toISOString()
     };
@@ -393,7 +399,7 @@ export const forceSaveTest = async () => {
       areas: []
     };
     
-    const newspapers = await getNewspapers();
+    const newspapers = getNewspapers();
     newspapers.push(testNewspaper);
     localStorage.setItem(NEWSPAPERS_KEY, JSON.stringify(newspapers));
     return true;

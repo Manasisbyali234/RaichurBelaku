@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { convertAllPDFPagesToImages } from '../utils/pdfUtils';
-import { saveNewspaper, getStorageStatus } from '../utils/supabaseStorage';
-import { saveNewspaper as saveLocalNewspaper, getStorageStatus as getLocalStorageStatus } from '../utils/localStorage';
+import { convertPDFToImage } from '../utils/pdfUtils';
+import { saveNewspaper } from '../utils/localStorage';
 
 const AdminUploadPDF = ({ onUploadSuccess }) => {
   const [uploading, setUploading] = useState(false);
@@ -21,62 +20,44 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
     setUploading(true);
     
     try {
-      console.log('Processing and saving PDF:', file.name);
+      console.log('Starting PDF upload for:', file.name);
       
-      const [pagesData] = await Promise.all([
-        convertAllPDFPagesToImages(file)
-      ]);
-
-      const newspaper = {
-        id: Date.now().toString(),
-        name: file.name,
-        date: new Date().toISOString(),
-        pages: pagesData.pages,
-        totalPages: pagesData.totalPages,
-        actualPages: pagesData.actualPages,
-        previewImage: pagesData.previewImage,
-        width: pagesData.width,
-        height: pagesData.height,
-        areas: []
-      };
+      // Convert PDF to image using utility
+      const result = await convertPDFToImage(file);
+      console.log('PDF conversion result:', result);
       
-      // Auto-save immediately with PDF file
-      let savedId;
-      let storageStatus;
-      
-      try {
-        // Try Supabase first if available
-        savedId = await saveNewspaper(newspaper, file);
-        storageStatus = await getStorageStatus();
-      } catch (error) {
-        console.log('Supabase not available, using localStorage:', error.message);
-        // Fallback to localStorage
-        savedId = await saveLocalNewspaper(newspaper);
-        storageStatus = await getLocalStorageStatus();
+      if (!result || !result.imageUrl) {
+        throw new Error('PDF conversion failed - no image generated');
       }
       
-      const savedNewspaper = { ...newspaper, id: savedId };
+      const { imageUrl, width, height } = result;
+      
+      // Create newspaper object
+      const newspaper = {
+        id: Date.now().toString(),
+        name: file.name.replace('.pdf', ''),
+        date: new Date().toISOString(),
+        imageUrl,
+        previewImage: imageUrl, // Add both properties for compatibility
+        width,
+        height,
+        areas: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Save to localStorage
+      saveNewspaper(newspaper);
       
       // Reset form
       const fileInput = document.getElementById('pdf-upload');
       if (fileInput) fileInput.value = '';
       
-      onUploadSuccess(savedNewspaper);
-      alert(`ಪತ್ರಿಕೆ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್ಲೋಡ್ ಆಗಿದೆ! (${storageStatus.storageType})`);
+      onUploadSuccess(newspaper);
+      alert('ಪತ್ರಿಕೆ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್ಲೋಡ್ ಆಗಿದೆ!');
     } catch (error) {
       console.error('Upload error:', error);
-      
-      let errorMessage = 'PDF ಅಪ್ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ ಸಂಭವಿಸಿದೆ';
-      
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.name === 'QuotaExceededError') {
-        errorMessage = 'ಸ್ಟೋರೇಜ್ ಸ್ಥಳ ನಿಂದಿದೆ. ದಯವಿಟ್ಟು ಕೆಲವು ಫೈಲ್ಗಳನ್ನು ಅಳಿಸಿ.';
-      } else if (error.name === 'NetworkError') {
-        errorMessage = 'ನೆಟ್ವರ್ಕ್ ಸಮಸ್ಯೆ. ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ.';
-      }
-      
-      alert(errorMessage);
+      alert(error.message || 'PDF ಅಪ್ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ ಸಂಭವಿಸಿದೆ');
     } finally {
       setUploading(false);
     }

@@ -13,10 +13,24 @@ const NewsPage = () => {
       try {
         let loadedNewspaper;
         if (newspaperId) {
+          console.log('Loading newspaper by ID:', newspaperId);
           loadedNewspaper = await getNewspaperById(newspaperId);
         } else {
+          console.log('Loading today\'s newspaper...');
           loadedNewspaper = await getTodaysNewspaper();
+          console.log('Today\'s newspaper result:', loadedNewspaper);
+          
+          // If no today's newspaper is set, get the latest newspaper
+          if (!loadedNewspaper) {
+            console.log('No today\'s newspaper found, getting latest...');
+            const allNewspapers = getNewspapers();
+            if (allNewspapers.length > 0) {
+              loadedNewspaper = allNewspapers.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+              console.log('Using latest newspaper:', loadedNewspaper?.name);
+            }
+          }
         }
+        console.log('Final loaded newspaper:', loadedNewspaper);
         setNewspaper(loadedNewspaper);
       } catch (error) {
         console.error('Error loading newspaper:', error);

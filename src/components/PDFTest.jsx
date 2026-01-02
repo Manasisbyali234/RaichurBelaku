@@ -1,44 +1,100 @@
 import React, { useState } from 'react';
-import { convertPDFToImage } from '../utils/pdfUtils';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 const PDFTest = () => {
-  const [status, setStatus] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [result, setResult] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const testPDFProcessing = async (file) => {
+  const testPDFConversion = async (file) => {
+    setLoading(true);
+    setResult('Starting PDF test...');
+    
     try {
-      setStatus('PDF ಪ್ರಕ್ರಿಯೆಗೊಳಿಸುತ್ತಿದೆ...');
-      const result = await convertPDFToImage(file);
-      setImageUrl(result.imageUrl);
-      setStatus('ಯಶಸ್ವಿಯಾಗಿ ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗಿದೆ!');
+      console.log('Testing PDF:', file.name, file.size, file.type);
+      setResult(prev => prev + `\nFile: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
+      
+      // Test 1: Read as ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      console.log('ArrayBuffer created:', arrayBuffer.byteLength);
+      setResult(prev => prev + `\nArrayBuffer: ${arrayBuffer.byteLength} bytes`);
+      
+      // Test 2: Load PDF document
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      console.log('PDF loaded:', pdf.numPages, 'pages');
+      setResult(prev => prev + `\nPDF loaded: ${pdf.numPages} pages`);
+      
+      // Test 3: Get first page
+      const page = await pdf.getPage(1);
+      console.log('Page loaded');
+      setResult(prev => prev + `\nPage 1 loaded`);
+      
+      // Test 4: Create viewport
+      const viewport = page.getViewport({ scale: 1.0 });
+      console.log('Viewport:', viewport.width, 'x', viewport.height);
+      setResult(prev => prev + `\nViewport: ${viewport.width}x${viewport.height}`);
+      
+      // Test 5: Create canvas and render
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      console.log('Page rendered');
+      setResult(prev => prev + `\nPage rendered successfully`);
+      
+      // Test 6: Convert to image
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      console.log('Image data length:', imageData.length);
+      setResult(prev => prev + `\nImage data: ${imageData.length} chars`);
+      setResult(prev => prev + `\nSUCCESS: PDF converted to image!`);
+      
+      // Show preview
+      const img = document.createElement('img');
+      img.src = imageData;
+      img.style.maxWidth = '300px';
+      img.style.border = '1px solid #ccc';
+      document.getElementById('preview').innerHTML = '';
+      document.getElementById('preview').appendChild(img);
+      
     } catch (error) {
-      setStatus('ದೋಷ: ' + error.message);
+      console.error('PDF test error:', error);
+      setResult(prev => prev + `\nERROR: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      testPDFConversion(file);
     }
   };
 
   return (
-    <div className="p-4 border rounded-lg">
-      <h3 className="text-lg font-bold mb-4">PDF ಪರೀಕ್ಷೆ</h3>
+    <div className="p-4 bg-white rounded-lg shadow">
+      <h3 className="text-lg font-semibold mb-4">PDF.js Test</h3>
       
       <input
         type="file"
         accept=".pdf"
-        onChange={(e) => e.target.files[0] && testPDFProcessing(e.target.files[0])}
-        className="mb-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        onChange={handleFileSelect}
+        className="mb-4 block"
       />
       
-      {status && (
-        <div className="mb-4 p-2 bg-gray-100 rounded">
-          {status}
-        </div>
-      )}
+      {loading && <div className="text-blue-600">Testing PDF...</div>}
       
-      {imageUrl && (
-        <div>
-          <p className="mb-2">ಪರಿವರ್ತಿತ ಚಿತ್ರ:</p>
-          <img src={imageUrl} alt="PDF Preview" className="max-w-full h-auto border" />
-        </div>
-      )}
+      <div className="bg-gray-100 p-3 rounded text-sm font-mono whitespace-pre-wrap mb-4">
+        {result || 'Select a PDF file to test...'}
+      </div>
+      
+      <div id="preview" className="border border-gray-300 p-2 rounded min-h-[100px]">
+        Preview will appear here...
+      </div>
     </div>
   );
 };

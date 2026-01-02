@@ -13,10 +13,17 @@ const NewspaperViewer = ({ newspaper }) => {
     const loadAreas = () => {
       if (newspaper) {
         try {
-          const clickableAreas = newspaper.areas || getClickableAreas(newspaper.id) || [];
+          // First try to get areas from the newspaper object itself
+          let clickableAreas = newspaper.areas || [];
+          
+          // If no areas in the object, try to get from localStorage by ID
+          if (clickableAreas.length === 0) {
+            clickableAreas = getClickableAreas(newspaper.id) || [];
+          }
+          
           console.log('Loading areas for newspaper:', newspaper.id, 'Areas:', clickableAreas);
           console.log('Current page:', currentPage + 1);
-          console.log('Areas for current page:', clickableAreas.filter(area => area.pageNumber === currentPage + 1));
+          console.log('Areas for current page:', clickableAreas.filter(area => !area.pageNumber || area.pageNumber === currentPage + 1));
           setAreas(clickableAreas);
         } catch (error) {
           console.error('Error loading areas:', error);
@@ -57,7 +64,8 @@ const NewspaperViewer = ({ newspaper }) => {
     if (newspaper.pages && newspaper.pages[currentPage]) {
       return newspaper.pages[currentPage].imageUrl;
     }
-    return newspaper.previewImage;
+    // Try different image properties
+    return newspaper.imageUrl || newspaper.previewImage || newspaper.preview;
   };
 
   if (!newspaper) {
@@ -157,7 +165,7 @@ const NewspaperViewer = ({ newspaper }) => {
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 />
                 
-                {areas.filter(area => area.pageNumber === currentPage + 1).map(area => (
+                {areas.filter(area => !area.pageNumber || area.pageNumber === currentPage + 1).map(area => (
                   <div
                     key={area.id}
                     className="absolute cursor-pointer"
@@ -175,7 +183,7 @@ const NewspaperViewer = ({ newspaper }) => {
                     }}
                     title={area.title || 'ಕ್ಲಿಕ್ ಮಾಡಿ'}
                   />
-                ))}
+                ))}}}
               </div>
             </div>
           </div>

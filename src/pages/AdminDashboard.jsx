@@ -6,19 +6,8 @@ import StorageStatus from '../components/StorageStatus';
 import ErrorBoundary from '../components/ErrorBoundary';
 import DataMigration from '../components/DataMigration';
 import SupabaseDebug from '../components/SupabaseDebug';
-import { 
-  getNewspapers, 
-  publishToday, 
-  getTodaysNewspaper, 
-  deleteNewspaper, 
-  getStorageStatus,
-  cleanupOldNewspapers,
-  clearAllData,
-  createBackup,
-  restoreFromBackup,
-  testLocalStorage,
-  forceSaveTest
-} from '../utils/localStorage';
+import PDFTest from '../components/PDFTest';
+import { getNewspapers, deleteNewspaper, publishToday, getTodaysNewspaper, clearAllData, createBackup, restoreFromBackup, testLocalStorage, forceSaveTest } from '../utils/localStorage';
 
 const AdminDashboard = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -29,12 +18,12 @@ const AdminDashboard = () => {
 
   const loadNewspapers = async () => {
     try {
-      console.log('Loading newspapers...');
-      const savedNewspapers = await getNewspapers();
+      console.log('Loading newspapers from localStorage...');
+      const savedNewspapers = getNewspapers();
       console.log('Loaded newspapers:', savedNewspapers.length);
       setNewspapers(savedNewspapers);
       
-      const todaysNews = await getTodaysNewspaper();
+      const todaysNews = getTodaysNewspaper();
       console.log('Today\'s newspaper:', todaysNews?.name || 'None');
       setTodaysNewspaper(todaysNews);
       
@@ -43,7 +32,6 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error loading newspapers:', error);
-      // Don't show alert here as it might interfere with UI
     }
   };
 
@@ -55,10 +43,10 @@ const AdminDashboard = () => {
     console.log('Upload success callback called with:', newspaper);
     setCurrentNewspaper(newspaper);
     
-    // Force refresh newspapers from storage
+    // Force refresh newspapers from backend
     try {
-      const updatedNewspapers = await getNewspapers();
-      console.log('Refreshed newspapers from storage:', updatedNewspapers.length);
+      const updatedNewspapers = await apiService.getNewspapers();
+      console.log('Refreshed newspapers from backend:', updatedNewspapers.length);
       setNewspapers(updatedNewspapers);
     } catch (error) {
       console.error('Error refreshing newspapers:', error);
@@ -87,11 +75,10 @@ const AdminDashboard = () => {
     console.log('Available newspapers:', newspapers);
     try {
       const success = await publishToday(newspaperId);
-      console.log('Publish success:', success);
       if (success) {
-        setTodaysNewspaper(newspapers.find(n => n.id === newspaperId));
-        const storageStatus = await getStorageStatus();
-        alert(`ಇಂದಿನ ಪತ್ರಿಕೆಯಾಗಿ ಪ್ರಕಟಿಸಲಾಗಿದೆ! (${storageStatus.storageType})`);
+        const newspaper = newspapers.find(n => n.id === newspaperId);
+        setTodaysNewspaper(newspaper);
+        alert('ಇಂದಿನ ಪತ್ರಿಕೆಯಾಗಿ ಪ್ರಕಟಿಸಲಾಗಿದೆ!');
       } else {
         alert('ಪ್ರಕಟಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
       }
@@ -156,6 +143,16 @@ const AdminDashboard = () => {
                 ಪತ್ರಿಕೆಗಳನ್ನು ನಿರ್ವಹಿಸಿ
               </button>
               <button
+                onClick={() => setActiveTab('test')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
+                  activeTab === 'test'
+                    ? 'border-newspaper-blue text-newspaper-blue'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                PDF ಟೆಸ್ಟ್
+              </button>
+              <button
                 onClick={() => setActiveTab('data')}
                 className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'data'
@@ -179,6 +176,10 @@ const AdminDashboard = () => {
           {/* Data Migration - Show only if localStorage has data */}
           <DataMigration />
           
+          {activeTab === 'test' && (
+            <PDFTest />
+          )}
+
           {activeTab === 'upload' && (
             <AdminUploadPDF onUploadSuccess={handleUploadSuccess} />
           )}
@@ -230,13 +231,18 @@ const AdminDashboard = () => {
               }}
               onDeleteNewspaper={async (newspaperId) => {
                 if (window.confirm('ಈ ಪತ್ರಿಕೆಯನ್ನು ಅಳಿಸಲು ನಿಶ್ಚಿತವಾಗಿದ್ದೀರಾ?')) {
-                  await deleteNewspaper(newspaperId);
-                  await loadNewspapers();
-                  if (currentNewspaper?.id === newspaperId) {
-                    setCurrentNewspaper(null);
-                  }
-                  if (todaysNewspaper?.id === newspaperId) {
-                    setTodaysNewspaper(null);
+                  try {
+                    await apiService.deleteNewspaper(newspaperId);
+                    await loadNewspapers();
+                    if (currentNewspaper?.id === newspaperId) {
+                      setCurrentNewspaper(null);
+                    }
+                    if (todaysNewspaper?.id === newspaperId) {
+                      setTodaysNewspaper(null);
+                    }
+                  } catch (error) {
+                    console.error('Error deleting newspaper:', error);
+                    alert('ಪತ್ರಿಕೆ ಅಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ');
                   }
                 }
               }}
@@ -281,7 +287,7 @@ const ManageNewspapers = ({ newspapers, currentNewspaper, todaysNewspaper, onNew
             >
               <div className="flex items-center space-x-4">
                 <img
-                  src={newspaper.previewImage}
+                  src={`http://localhost:5000${newspaper.imageUrl || newspaper.previewImage}`}
                   alt={newspaper.name}
                   className="w-16 h-20 object-cover rounded border"
                 />
@@ -411,11 +417,11 @@ const DataManagement = () => {
       
       {/* Storage Info */}
       <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-medium text-gray-900 mb-3">ಸುಪಾಬೇಸ್ ಮಾಹಿತಿ</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-3">ಬ್ಯಾಕ್ಎಂಡ್ ಮಾಹಿತಿ</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
           <div>
             <p className="text-sm text-gray-600">
-              ಸ್ಟೋರೇಜ್ ಪ್ರಕಾರ: <span className="font-medium text-green-600">Supabase Cloud Storage</span>
+              ಸ್ಟೋರೇಜ್ ಪ್ರಕಾರ: <span className="font-medium text-green-600">Backend Database</span>
             </p>
             <p className="text-sm text-gray-600">
               ಪತ್ರಿಕೆಗಳು: <span className="font-medium">{newspapers.length}</span>
@@ -423,7 +429,7 @@ const DataManagement = () => {
           </div>
           <div>
             <p className="text-sm text-gray-600">
-              ಒಟ್ಟು ಪ್ರದೇಶಗಳು: <span className="font-medium">{newspapers.reduce((sum, n) => sum + (n.areas?.length || 0), 0)}</span>
+              ಒಟ್ಟು ಪ್ರದೇಶಗಳು: <span className="font-medium">{newspapers.reduce((sum, n) => sum + (n.clickableAreas?.length || 0), 0)}</span>
             </p>
             <p className="text-sm text-gray-600">
               ಸ್ಥಿತಿ: <span className="font-medium text-green-600">ಆನ್ಲೈನ್</span>
@@ -552,22 +558,22 @@ const DataManagement = () => {
         <h3 className="text-lg font-medium text-red-900 mb-2">ಅಪಾಯಕಾರಿ ಕ್ಷೇತ್ರ</h3>
         <p className="text-sm text-red-700 mb-4">ಇದು ಎಲ್ಲಾ ಪತ್ರಿಕೆಗಳನ್ನು ಶಾಶ್ವತವಾಗಿ ಅಳಿಸುತ್ತದೆ. ಇದನ್ನು ವಾಪಸ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.</p>
         <button
-          onClick={async () => {
-            if (window.confirm('ಎಲ್ಲಾ ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲು ನಿಶ್ಚಿತವಾಗಿದ್ದೀರಾ?')) {
-              setIsLoading(true);
-              try {
-                for (const newspaper of newspapers) {
-                  await deleteNewspaper(newspaper.id);
+            onClick={async () => {
+              if (window.confirm('ಎಲ್ಲಾ ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲು ನಿಶ್ಚಿತವಾಗಿದ್ದೀರಾ?')) {
+                setIsLoading(true);
+                try {
+                  for (const newspaper of newspapers) {
+                    await apiService.deleteNewspaper(newspaper.id);
+                  }
+                  alert('ಎಲ್ಲಾ ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ!');
+                  await refreshData();
+                } catch (error) {
+                  alert('ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ');
+                } finally {
+                  setIsLoading(false);
                 }
-                alert('ಎಲ್ಲಾ ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ!');
-                await refreshData();
-              } catch (error) {
-                alert('ಪತ್ರಿಕೆಗಳನ್ನು ಅಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ');
-              } finally {
-                setIsLoading(false);
               }
-            }
-          }}
+            }}
           disabled={isLoading}
           className="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
         >

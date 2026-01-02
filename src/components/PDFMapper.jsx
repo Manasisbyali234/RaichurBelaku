@@ -1,348 +1,311 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { saveClickableAreas, getClickableAreas } from '../utils/localStorage';
-import AreaEditForm from './AreaEditForm';
+import { saveClickableAreas } from '../utils/localStorage';
 
-const PDFMapper = ({ newspaper, onNavigateToManage, onAreasSaved, onPublishToday }) => {
-  const [areas, setAreas] = useState([]);
+const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
+  const [areas, setAreas] = useState(newspaper?.areas || []);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentArea, setCurrentArea] = useState(null);
-  const [currentPage, setCurrentPage] = useState(0);
   const [selectedArea, setSelectedArea] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [editingArea, setEditingArea] = useState(null);
-
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ title: '', content: '', imageUrl: '' });
+  
+  const canvasRef = useRef(null);
   const imageRef = useRef(null);
+  const startPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    const loadAreas = () => {
-      if (newspaper) {
-        try {
-          const savedAreas = getClickableAreas(newspaper.id);
-          setAreas(Array.isArray(savedAreas) ? savedAreas : []);
-        } catch (error) {
-          console.error('Error loading areas:', error);
-          setAreas([]);
-        }
-      } else {
-        setAreas([]);
-      }
-    };
-    
-    loadAreas();
+    if (newspaper?.areas) {
+      setAreas(newspaper.areas);
+    }
   }, [newspaper]);
 
-  const handleMouseDown = (e) => {
-    const rect = imageRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const getMousePos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = canvasRef.current.width / rect.width;
+    const scaleY = canvasRef.current.height / rect.height;
     
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  };
+
+  const handleMouseDown = (e) => {
+    const pos = getMousePos(e);
+    startPos.current = pos;
     setIsDrawing(true);
-    setCurrentArea({ x, y, width: 0, height: 0 });
+    setCurrentArea({
+      x: pos.x,
+      y: pos.y,
+      width: 0,
+      height: 0
+    });
   };
 
   const handleMouseMove = (e) => {
     if (!isDrawing) return;
     
-    const rect = imageRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const pos = getMousePos(e);
+    const width = pos.x - startPos.current.x;
+    const height = pos.y - startPos.current.y;
     
-    setCurrentArea(prev => ({
-      ...prev,
-      width: x - prev.x,
-      height: y - prev.y
-    }));
+    setCurrentArea({
+      x: width < 0 ? pos.x : startPos.current.x,
+      y: height < 0 ? pos.y : startPos.current.y,
+      width: Math.abs(width),
+      height: Math.abs(height)
+    });
+    
+    drawCanvas();
   };
 
   const handleMouseUp = () => {
-    if (!isDrawing || !currentArea) return;
-    
-    if (Math.abs(currentArea.width) > 20 && Math.abs(currentArea.height) > 20) {
-      const newArea = {
-        id: Date.now().toString(),
-        x: Math.min(currentArea.x, currentArea.x + currentArea.width),
-        y: Math.min(currentArea.y, currentArea.y + currentArea.height),
-        width: Math.abs(currentArea.width),
-        height: Math.abs(currentArea.height),
-        title: `ಸುದ್ದಿ ${areas.filter(a => a.pageNumber === currentPage + 1).length + 1}`,
-        content: 'ಈ ಪ್ರದೇಶದ ವಿವರಗಳು ಚಿತ್ರದಲ್ಲಿ ಲಭ್ಯವಿದೆ.',
-        imageUrl: '',
-        pageNumber: currentPage + 1
-      };
-      
-      console.log('Adding new area:', newArea);
-      setAreas(prev => [...prev, newArea]);
-    }
-    setCurrentArea(null);
-    setIsDrawing(false);
-  };
-
-  const deleteArea = (areaId) => {
-    const updatedAreas = areas.filter(area => area.id !== areaId);
-    setAreas(updatedAreas);
-  };
-
-  const handleAreaClick = (area) => {
-    setSelectedArea(area);
-    setEditingArea(area);
-  };
-
-  const handleSaveArea = (updatedArea) => {
-    const updatedAreas = areas.map(area => 
-      area.id === updatedArea.id ? updatedArea : area
-    );
-    setAreas(updatedAreas);
-    setEditingArea(null);
-    setSelectedArea(null);
-  };
-
-  const handleCloseEdit = () => {
-    setEditingArea(null);
-    setSelectedArea(null);
-  };
-
-  const handleSaveAll = () => {
-    if (!Array.isArray(areas) || areas.length === 0) {
-      alert('ಉಳಿಸಲು ಪ್ರದೇಶಗಳಿಲ್ಲ. ಮುಂದೆ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ.');
+    if (!isDrawing || !currentArea || currentArea.width < 10 || currentArea.height < 10) {
+      setIsDrawing(false);
+      setCurrentArea(null);
       return;
     }
-
-    setIsSaving(true);
-    console.log('Saving areas for newspaper:', newspaper.id, 'Areas count:', areas.length);
     
-    try {
-      const validAreas = areas.filter(area => 
-        area.id && 
-        typeof area.x === 'number' && 
-        typeof area.y === 'number' && 
-        typeof area.width === 'number' && 
-        typeof area.height === 'number' &&
-        Math.abs(area.width) > 10 && 
-        Math.abs(area.height) > 10
-      );
+    setIsDrawing(false);
+    setSelectedArea(currentArea);
+    setShowForm(true);
+    setFormData({ title: '', content: '', imageUrl: '' });
+  };
+
+  const drawCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const img = imageRef.current;
+    
+    if (!img) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    
+    // Draw existing areas
+    areas.forEach((area, index) => {
+      ctx.strokeStyle = '#1E40AF';
+      ctx.fillStyle = 'rgba(30, 64, 175, 0.2)';
+      ctx.lineWidth = 2;
+      ctx.fillRect(area.x, area.y, area.width, area.height);
+      ctx.strokeRect(area.x, area.y, area.width, area.height);
       
-      if (validAreas.length === 0) {
-        alert('ಮಾನ್ಯವಾದ ಪ್ರದೇಶಗಳಿಲ್ಲ. ದಯವಿಟ್ಟು ಪುನಃ ಪ್ರಯತ್ನಿಸಿ.');
-        setIsSaving(false);
-        return;
-      }
-      
-      const success = saveClickableAreas(newspaper.id, validAreas);
-      
-      if (success) {
-        alert(`${validAreas.length} ಪ್ರದೇಶಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ!`);
-        setAreas(validAreas);
-        
-        if (onAreasSaved) {
-          onAreasSaved();
-        }
-      } else {
-        alert('ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
-      }
-    } catch (error) {
-      console.error('Error saving areas:', error);
-      alert('ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
-    } finally {
-      setIsSaving(false);
+      // Draw area number
+      ctx.fillStyle = '#1E40AF';
+      ctx.font = '16px Arial';
+      ctx.fillText(index + 1, area.x + 5, area.y + 20);
+    });
+    
+    // Draw current area being drawn
+    if (currentArea) {
+      ctx.strokeStyle = '#B91C1C';
+      ctx.fillStyle = 'rgba(185, 28, 28, 0.2)';
+      ctx.lineWidth = 2;
+      ctx.fillRect(currentArea.x, currentArea.y, currentArea.width, currentArea.height);
+      ctx.strokeRect(currentArea.x, currentArea.y, currentArea.width, currentArea.height);
     }
   };
 
+  const handleImageLoad = () => {
+    const canvas = canvasRef.current;
+    const img = imageRef.current;
+    
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    drawCanvas();
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!formData.title.trim()) {
+      alert('ದಯವಿಟ್ಟು ಶೀರ್ಷಿಕೆ ನಮೂದಿಸಿ');
+      return;
+    }
+    
+    if (!formData.content.trim()) {
+      alert('ದಯವಿಟ್ಟು ವಿಷಯ ನಮೂದಿಸಿ');
+      return;
+    }
+    
+    const newArea = {
+      ...selectedArea,
+      id: Date.now(),
+      pageNumber: 1, // Add page number for single-page newspapers
+      title: formData.title,
+      content: formData.content,
+      imageUrl: formData.imageUrl
+    };
+    
+    const updatedAreas = [...areas, newArea];
+    setAreas(updatedAreas);
+    
+    // Save to localStorage
+    saveClickableAreas(newspaper.id, updatedAreas);
+    if (onAreasUpdate) onAreasUpdate(updatedAreas);
+    
+    setShowForm(false);
+    setSelectedArea(null);
+    setCurrentArea(null);
+    drawCanvas();
+  };
+
+  const handleDeleteArea = (index) => {
+    const updatedAreas = areas.filter((_, i) => i !== index);
+    setAreas(updatedAreas);
+    
+    // Save to localStorage
+    saveClickableAreas(newspaper.id, updatedAreas);
+    onAreasUpdate(updatedAreas);
+    drawCanvas();
+  };
+
+  useEffect(() => {
+    drawCanvas();
+  }, [areas]);
+
+  if (!newspaper?.imageUrl) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">ಮೊದಲು PDF ಅಪ್ಲೋಡ್ ಮಾಡಿ</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <h2 className="text-lg sm:text-xl font-semibold text-newspaper-blue mb-3 sm:mb-4">ಕ್ಲಿಕ್ ಮಾಡಬಹುದಾದ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ</h2>
+    <div className="bg-white rounded-lg shadow-md p-4">
+      <h2 className="text-xl font-semibold text-newspaper-blue mb-4">ಕ್ಲಿಕ್ ಮಾಡಬಹುದಾದ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ</h2>
       
-      {/* Loading overlay during save */}
-      {isSaving && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-newspaper-blue border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-700">ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲಾಗುತ್ತಿದೆ...</p>
-          </div>
-        </div>
-      )}
-      
-      <div className="relative inline-block w-full">
-        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center gap-2 text-sm text-yellow-800">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>ಮೌಸ್ ಡ್ರ್ಯಾಗ್ ಮಾಡಿ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ, ಅನಂತರ ಕ್ಲಿಕ್ ಮಾಡಿ ವಿಷಯ ಸೇರಿಸಿ</span>
-          </div>
-        </div>
-        
+      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+        <p className="text-sm text-newspaper-blue">
+          ಮೌಸ್ ಡ್ರ್ಯಾಗ್ ಮಾಡಿ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ, ಅನಂತರ ಕ್ಲಿಕ್ ಮಾಡಿ ವಿಷಯ ಸೇರಿಸಿ
+        </p>
+      </div>
+
+      <div className="relative border border-gray-300 rounded-lg overflow-hidden">
         <img
           ref={imageRef}
-          src={newspaper.pages ? newspaper.pages[currentPage].imageUrl : newspaper.previewImage}
-          alt={`Newspaper page ${currentPage + 1}`}
-          className="w-full h-auto border border-gray-300 cursor-crosshair"
+          src={newspaper.imageUrl}
+          alt="Newspaper"
+          className="w-full h-auto"
+          onLoad={handleImageLoad}
+          style={{ display: 'none' }}
+        />
+        
+        <canvas
+          ref={canvasRef}
+          className="w-full h-auto cursor-crosshair"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          draggable={false}
         />
-        
-        {Array.isArray(areas) && areas.filter(area => area.pageNumber === currentPage + 1).map(area => (
-          <div
-            key={area.id}
-            className={`clickable-area group cursor-pointer ${
-              selectedArea && selectedArea.id === area.id ? 'ring-2 ring-blue-500' : ''
-            }`}
-            style={{
-              left: area.x,
-              top: area.y,
-              width: Math.abs(area.width),
-              height: Math.abs(area.height)
-            }}
-            onClick={() => handleAreaClick(area)}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteArea(area.id);
-              }}
-              className="absolute -top-2 -right-2 bg-newspaper-red text-white rounded-full w-6 h-6 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
-            >
-              ×
-            </button>
-            {area.title && (
-              <div className="absolute -bottom-6 left-0 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity max-w-40 truncate">
-                {area.title}
-              </div>
-            )}
-          </div>
-        ))}
-        
-        {currentArea && (
-          <div
-            className="drawing-area"
-            style={{
-              left: currentArea.x,
-              top: currentArea.y,
-              width: Math.abs(currentArea.width),
-              height: Math.abs(currentArea.height)
-            }}
-          />
-        )}
       </div>
 
-      {newspaper.pages && newspaper.totalPages > 1 && (
-        <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <button
-            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-            disabled={currentPage === 0}
-            className="w-full sm:w-auto bg-gray-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          >
-            ← ಹಿಂದಿನ ಪುಟ
-          </button>
-          
-          <div className="text-xs sm:text-sm text-gray-600">
-            ಪುಟ {currentPage + 1} / {newspaper.totalPages}
+      {areas.length > 0 && (
+        <div className="mt-4">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold text-newspaper-blue">ಮ್ಯಾಪ್ ಮಾಡಿದ ಪ್ರದೇಶಗಳು</h3>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Save all button clicked');
+                if (onNavigateToManage) {
+                  onNavigateToManage();
+                } else {
+                  console.log('onNavigateToManage callback not available');
+                }
+              }}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium cursor-pointer"
+            >
+              ಎಲ್ಲಾ ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಿ
+            </button>
           </div>
-          
-          <button
-            onClick={() => setCurrentPage(Math.min(newspaper.totalPages - 1, currentPage + 1))}
-            disabled={currentPage === newspaper.totalPages - 1}
-            className="w-full sm:w-auto bg-gray-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          >
-            ಮುಂದಿನ ಪುಟ →
-          </button>
+          <div className="space-y-2">
+            {areas.map((area, index) => (
+              <div key={area.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <span className="font-medium text-newspaper-blue">ಪ್ರದೇಶ {index + 1}:</span>
+                  <span className="ml-2">{area.title}</span>
+                </div>
+                <button
+                  onClick={() => handleDeleteArea(index)}
+                  className="text-red-600 hover:text-red-800 px-2 py-1 rounded"
+                >
+                  ಅಳಿಸಿ
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="mt-3 sm:mt-4">
-        {/* Save and Publish Workflow */}
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-lg font-medium text-blue-900 mb-3">ಪ್ರದೇಶ ಮ್ಯಾಪಿಂಗ್ ನಿಯಂತ್ರಣ</h3>
-          
-          <div className="mb-3">
-            <div className="text-sm text-blue-800">
-              ಒಟ್ಟು ಪ್ರದೇಶಗಳು: {Array.isArray(areas) ? areas.length : 0} | ಈ ಪುಟದಲ್ಲಿ: {Array.isArray(areas) ? areas.filter(area => area.pageNumber === currentPage + 1).length : 0}
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={handleSaveAll}
-              disabled={isSaving || !Array.isArray(areas) || areas.length === 0}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  ಉಳಿಸಲಾಗುತ್ತಿದೆ...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಿ ({Array.isArray(areas) ? areas.length : 0})
-                </>
-              )}
-            </button>
+      {showForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-newspaper-blue mb-4">ಪ್ರದೇಶದ ವಿಷಯ ಸೇರಿಸಿ</h3>
             
-            {Array.isArray(areas) && areas.length > 0 && (
-              <>
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ಶೀರ್ಷಿಕೆ *
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-newspaper-blue"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ವಿಷಯ *
+                </label>
+                <textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({...formData, content: e.target.value})}
+                  rows="4"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-newspaper-blue"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ಚಿತ್ರದ URL (ಐಚ್ಛಿಕ)
+                </label>
+                <input
+                  type="url"
+                  value={formData.imageUrl}
+                  onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-newspaper-blue"
+                />
+              </div>
+              
+              <div className="flex space-x-3">
                 <button
-                  onClick={async () => {
-                    if (window.confirm('ಈ ಪತ್ರಿಕೆಯನ್ನು ಇಂದಿನ ಪತ್ರಿಕೆಯಾಗಿ ಪ್ರಕಟಿಸಬೇಕೇ?')) {
-                      if (onPublishToday) {
-                        await onPublishToday(newspaper.id);
-                      }
-                    }
+                  type="submit"
+                  className="flex-1 bg-newspaper-blue text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+                >
+                  ಸೇರಿಸಿ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false);
+                    setSelectedArea(null);
+                    setCurrentArea(null);
                   }}
-                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                  ಇಂದಿನ ಪತ್ರಿಕೆಯಾಗಿ ಪ್ರಕಟಿಸಿ
+                  ರದ್ದುಮಾಡಿ
                 </button>
-                
-                <button
-                  onClick={() => onNavigateToManage && onNavigateToManage()}
-                  className="bg-newspaper-blue text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  ಪತ್ರಿಕೆಗಳನ್ನು ನಿರ್ವಹಿಸಿ
-                </button>
-              </>
-            )}
-          </div>
-          
-          <p className="text-sm text-blue-700 mt-2">
-            {!Array.isArray(areas) || areas.length === 0 
-              ? 'ಮುಂದೆ ಪ್ರದೇಶಗಳನ್ನು ಮ್ಯಾಪ್ ಮಾಡಿ, ಅನಂತರ ಉಳಿಸಿ'
-              : 'ಮುಂದೆ ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಿ, ಅನಂತರ ಪ್ರಕಟಿಸಲು ಹೋಗಿ'
-            }
-          </p>
-        </div>
-        
-        <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row gap-2">
-          <div className="text-xs sm:text-sm text-gray-600 flex items-center">
-            ಈ ಪುಟದಲ್ಲಿ: {Array.isArray(areas) ? areas.filter(area => area.pageNumber === currentPage + 1).length : 0} ಪ್ರದೇಶಗಳು
+              </div>
+            </form>
           </div>
         </div>
-        
-        <div className="text-xs sm:text-sm text-gray-600 space-y-1">
-          <p>• ಮೌಸ್ ಡ್ರ್ಯಾಗ್ ಮಾಡಿ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ</p>
-          <p>• ಪ್ರದೇಶವನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ ವಿಷಯ ಸೇರಿಸಿ</p>
-          <p>• ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಪ್ರದೇಶಗಳನ್ನು ಅಳಿಸಲು × ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿ</p>
-          <p>• ಪ್ರತಿ ಪುಟದ ಬದಲಾವಣೆಗಳು ಸ್ವಯಂಚಲಿತವಾಗಿ ಉಳಿಸಲಾಗುತ್ತವೆ</p>
-        </div>
-      </div>
-
-      {/* Area Edit Form */}
-      {editingArea && (
-        <AreaEditForm
-          area={editingArea}
-          onSave={handleSaveArea}
-          onClose={handleCloseEdit}
-        />
       )}
     </div>
   );

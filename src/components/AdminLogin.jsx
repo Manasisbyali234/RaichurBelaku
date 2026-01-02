@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
+import apiService from '../services/api';
 
 const AdminLogin = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Hardcoded credentials
-    if (credentials.username === 'admin' && credentials.password === 'admin123') {
+    try {
+      await apiService.login(credentials);
       onLogin();
       setError('');
-    } else {
-      setError('ತಪ್ಪು ಬಳಕೆದಾರ ಹೆಸರು ಅಥವಾ ಪಾಸ್‌ವರ್ಡ್');
+    } catch (error) {
+      setError('ತಪ್ಪು ಬಳಕೆದಾರ ಹೆಸರು ಅಥವಾ ಪಾಸ್ವರ್ಡ್');
     }
   };
 
@@ -46,7 +47,7 @@ const AdminLogin = ({ onLogin }) => {
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ಪಾಸ್‌ವರ್ಡ್
+                ಪಾಸ್ವರ್ಡ್
               </label>
               <input
                 type="password"
@@ -81,5 +82,4 @@ const AdminLogin = ({ onLogin }) => {
     </div>
   );
 };
-
 export default AdminLogin;

@@ -183,7 +183,7 @@ const NewspaperViewer = ({ newspaper }) => {
                     }}
                     title={area.title || 'ಕ್ಲಿಕ್ ಮಾಡಿ'}
                   />
-                ))}}}
+                ))}
               </div>
             </div>
           </div>

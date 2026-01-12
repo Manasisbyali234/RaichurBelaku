@@ -1,11 +1,11 @@
 // Backend API service
 class ApiService {
   constructor() {
-    // Use environment variable or fallback to localhost for development
-    const isDevelopment = import.meta.env.DEV || import.meta.env.VITE_NODE_ENV === 'development';
-    this.baseURL = isDevelopment ? 'http://localhost:3001/api' : '/api';
+    // Use environment variable for API URL, empty means localStorage only
+    const apiUrl = import.meta.env.VITE_API_URL;
+    this.baseURL = apiUrl ? `${apiUrl}/api` : null;
     this.isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    console.log('API Service initialized with baseURL:', this.baseURL);
+    console.log('API Service initialized with baseURL:', this.baseURL || 'localStorage only');
   }
 
   // Auth methods
@@ -44,6 +44,11 @@ class ApiService {
 
   // Newspaper methods
   async getNewspapers() {
+    if (!this.baseURL) {
+      // localStorage only mode
+      return JSON.parse(localStorage.getItem('newspapers') || '[]');
+    }
+    
     try {
       const response = await fetch(`${this.baseURL}/newspapers`);
       if (response.ok) {

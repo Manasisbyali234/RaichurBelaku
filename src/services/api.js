@@ -64,6 +64,13 @@ class ApiService {
   }
 
   async setTodayNewspaper(newspaperId) {
+    if (!this.baseURL) {
+      const newspapers = JSON.parse(localStorage.getItem('newspapers') || '[]');
+      newspapers.forEach(n => n.isToday = n.id === newspaperId || n._id === newspaperId);
+      localStorage.setItem('newspapers', JSON.stringify(newspapers));
+      return { success: true };
+    }
+    
     try {
       const response = await fetch(`${this.baseURL}/newspapers/${newspaperId}/set-today`, {
         method: 'POST',
@@ -83,6 +90,12 @@ class ApiService {
   }
 
   async getTodayNewspaper() {
+    if (!this.baseURL) {
+      const newspapers = JSON.parse(localStorage.getItem('newspapers') || '[]');
+      const today = newspapers.find(n => n.isToday);
+      return today || (newspapers.length > 0 ? newspapers[newspapers.length - 1] : null);
+    }
+    
     try {
       const response = await fetch(`${this.baseURL}/newspapers/today`);
       if (response.ok) {
@@ -127,6 +140,10 @@ class ApiService {
   }
 
   async uploadNewspaper(formData) {
+    if (!this.baseURL) {
+      throw new Error('Backend not configured. Please use Supabase or deploy a backend server.');
+    }
+    
     try {
       console.log('Uploading to backend...');
       

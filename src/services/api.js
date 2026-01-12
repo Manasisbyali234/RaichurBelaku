@@ -47,7 +47,8 @@ class ApiService {
     try {
       const response = await fetch(`${this.baseURL}/newspapers`);
       if (response.ok) {
-        return await response.json();
+        const text = await response.text();
+        return text ? JSON.parse(text) : [];
       }
     } catch (error) {
       console.log('Backend not available, using localStorage');
@@ -80,7 +81,8 @@ class ApiService {
     try {
       const response = await fetch(`${this.baseURL}/newspapers/today`);
       if (response.ok) {
-        const newspaper = await response.json();
+        const text = await response.text();
+        const newspaper = text ? JSON.parse(text) : null;
         console.log('Today\'s newspaper from backend:', newspaper);
         return newspaper;
       } else {
@@ -101,7 +103,8 @@ class ApiService {
     try {
       const response = await fetch(`${this.baseURL}/newspapers/${id}`);
       if (response.ok) {
-        const newspaper = await response.json();
+        const text = await response.text();
+        const newspaper = text ? JSON.parse(text) : null;
         console.log('Fetched newspaper by ID:', id, newspaper);
         return newspaper;
       } else {

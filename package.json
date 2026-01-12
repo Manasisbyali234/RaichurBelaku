@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "npm install && vite build",
-    "preview": "vite preview",
+    "dev": "npx vite",
+    "build": "npx vite build",
+    "preview": "npx vite preview",
     "test-backend": "node test-backend.js",
     "backend:install": "cd backend && npm install",
     "backend:dev": "cd backend && npm run dev",

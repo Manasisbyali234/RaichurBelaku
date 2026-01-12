@@ -1,7 +1,8 @@
 // Backend API service
 class ApiService {
   constructor() {
-    this.baseURL = 'http://localhost:3001/api'; // Change to your backend URL
+    // Use relative URLs in production, localhost in development
+    this.baseURL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api';
     this.isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
   }
 

@@ -1,113 +1,88 @@
-const API_BASE_URL = 'http://localhost:5000/api';
-
+// Frontend-only API service using localStorage
 class ApiService {
   constructor() {
-    this.token = localStorage.getItem('adminToken');
-  }
-
-  async request(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    if (this.token && !config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${this.token}`;
-    }
-
-    try {
-      const response = await fetch(url, config);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'API request failed');
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
+    this.isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
   }
 
   // Auth methods
   async login(credentials) {
-    const data = await this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    
-    if (data.token) {
-      this.token = data.token;
-      localStorage.setItem('adminToken', data.token);
+    // Simple frontend-only authentication
+    if (credentials.username === 'admin' && credentials.password === 'admin123') {
+      this.isLoggedIn = true;
+      localStorage.setItem('adminLoggedIn', 'true');
+      return { success: true, message: 'Login successful' };
+    } else {
+      throw new Error('Invalid credentials');
     }
-    
-    return data;
   }
 
   logout() {
-    this.token = null;
-    localStorage.removeItem('adminToken');
+    this.isLoggedIn = false;
+    localStorage.removeItem('adminLoggedIn');
   }
 
-  // Newspaper methods
+  // Newspaper methods using localStorage
   async getNewspapers() {
-    return this.request('/newspapers');
+    const newspapers = JSON.parse(localStorage.getItem('newspapers') || '[]');
+    return newspapers;
   }
 
   async getTodayNewspaper() {
-    return this.request('/newspapers/today');
+    const newspapers = await this.getNewspapers();
+    const today = new Date().toDateString();
+    return newspapers.find(n => new Date(n.date).toDateString() === today) || newspapers[0];
   }
 
   async getNewspaper(id) {
-    return this.request(`/newspapers/${id}`);
+    const newspapers = await this.getNewspapers();
+    return newspapers.find(n => n.id === id);
   }
 
   async uploadNewspaper(formData) {
     try {
-      return await this.request('/newspapers/upload', {
-        method: 'POST',
-        headers: {}, // Remove Content-Type to let browser set it for FormData
-        body: formData,
-      });
+      const file = formData.get('pdf');
+      const name = formData.get('name') || file.name.replace('.pdf', '');
+      const date = formData.get('date') || new Date().toISOString();
+      
+      // Create newspaper object
+      const newspaper = {
+        id: Date.now().toString(),
+        name,
+        date,
+        pdfUrl: URL.createObjectURL(file), // Create blob URL for PDF
+        imageUrl: null, // Will be set by the upload component
+        clickableAreas: []
+      };
+      
+      // Save to localStorage
+      const newspapers = await this.getNewspapers();
+      newspapers.unshift(newspaper);
+      localStorage.setItem('newspapers', JSON.stringify(newspapers));
+      
+      return newspaper;
     } catch (error) {
-      // Re-throw with original message for Kannada error handling
-      throw new Error(error.message);
+      throw new Error('PDF upload failed: ' + error.message);
     }
   }
 
   async updateClickableAreas(id, clickableAreas) {
-    return this.request(`/newspapers/${id}/areas`, {
-      method: 'PUT',
-      body: JSON.stringify({ clickableAreas }),
-    });
+    const newspapers = await this.getNewspapers();
+    const index = newspapers.findIndex(n => n.id === id);
+    
+    if (index !== -1) {
+      newspapers[index].clickableAreas = clickableAreas;
+      localStorage.setItem('newspapers', JSON.stringify(newspapers));
+      return newspapers[index];
+    }
+    
+    throw new Error('Newspaper not found');
   }
 
   async deleteNewspaper(id) {
-    return this.request(`/newspapers/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async validatePDF(file) {
-    const formData = new FormData();
-    formData.append('pdf', file);
-    formData.append('name', file.name);
-    formData.append('date', new Date().toISOString());
-    
-    // Create a dummy image for validation
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    canvas.toBlob((blob) => {
-      formData.append('image', blob, 'dummy.png');
-    });
-    
-    return this.uploadNewspaper(formData);
+    const newspapers = await this.getNewspapers();
+    const filtered = newspapers.filter(n => n.id !== id);
+    localStorage.setItem('newspapers', JSON.stringify(filtered));
+    return { success: true };
   }
 }
 

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { saveClickableAreas } from '../utils/localStorage';
+import apiService from '../services/api';
 
 const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
-  const [areas, setAreas] = useState(newspaper?.areas || []);
+  const [areas, setAreas] = useState(newspaper?.clickableAreas || []);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentArea, setCurrentArea] = useState(null);
   const [selectedArea, setSelectedArea] = useState(null);
@@ -14,8 +14,8 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
   const startPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (newspaper?.areas) {
-      setAreas(newspaper.areas);
+    if (newspaper?.clickableAreas) {
+      setAreas(newspaper.clickableAreas);
     }
   }, [newspaper]);
 
@@ -115,7 +115,7 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
     drawCanvas();
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.title.trim()) {
@@ -140,9 +140,14 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
     const updatedAreas = [...areas, newArea];
     setAreas(updatedAreas);
     
-    // Save to localStorage
-    saveClickableAreas(newspaper.id, updatedAreas);
-    if (onAreasUpdate) onAreasUpdate(updatedAreas);
+    try {
+      // Save to backend
+      await apiService.updateClickableAreas(newspaper.id, updatedAreas);
+      if (onAreasUpdate) onAreasUpdate(updatedAreas);
+    } catch (error) {
+      console.error('Error saving areas:', error);
+      alert('ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ');
+    }
     
     setShowForm(false);
     setSelectedArea(null);
@@ -150,13 +155,19 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
     drawCanvas();
   };
 
-  const handleDeleteArea = (index) => {
+  const handleDeleteArea = async (index) => {
     const updatedAreas = areas.filter((_, i) => i !== index);
     setAreas(updatedAreas);
     
-    // Save to localStorage
-    saveClickableAreas(newspaper.id, updatedAreas);
-    onAreasUpdate(updatedAreas);
+    try {
+      // Save to backend
+      await apiService.updateClickableAreas(newspaper.id, updatedAreas);
+      if (onAreasUpdate) onAreasUpdate(updatedAreas);
+    } catch (error) {
+      console.error('Error deleting area:', error);
+      alert('ಪ್ರದೇಶ ಅಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ');
+    }
+    
     drawCanvas();
   };
 
@@ -185,7 +196,7 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
       <div className="relative border border-gray-300 rounded-lg overflow-hidden">
         <img
           ref={imageRef}
-          src={newspaper.imageUrl}
+          src={`https://belku.onrender.com${newspaper.imageUrl}`}
           alt="Newspaper"
           className="w-full h-auto"
           onLoad={handleImageLoad}

@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "npx vite build",
     "preview": "vite preview",
-    "postinstall": "chmod +x node_modules/.bin/vite || true"
+    "test-backend": "node test-backend.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",

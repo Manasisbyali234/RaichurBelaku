@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getClickableAreas } from '../utils/localStorage';
 
 const NewspaperViewer = ({ newspaper }) => {
   const [areas, setAreas] = useState([]);
@@ -13,13 +12,8 @@ const NewspaperViewer = ({ newspaper }) => {
     const loadAreas = () => {
       if (newspaper) {
         try {
-          // First try to get areas from the newspaper object itself
-          let clickableAreas = newspaper.areas || [];
-          
-          // If no areas in the object, try to get from localStorage by ID
-          if (clickableAreas.length === 0) {
-            clickableAreas = getClickableAreas(newspaper.id) || [];
-          }
+          // Get areas from the newspaper object (from backend)
+          let clickableAreas = newspaper.clickableAreas || [];
           
           console.log('Loading areas for newspaper:', newspaper.id, 'Areas:', clickableAreas);
           console.log('Current page:', currentPage + 1);
@@ -62,10 +56,10 @@ const NewspaperViewer = ({ newspaper }) => {
 
   const getCurrentPageImage = () => {
     if (newspaper.pages && newspaper.pages[currentPage]) {
-      return newspaper.pages[currentPage].imageUrl;
+      return `https://belku.onrender.com${newspaper.pages[currentPage].imageUrl}`;
     }
     // Try different image properties
-    return newspaper.imageUrl || newspaper.previewImage || newspaper.preview;
+    return `https://belku.onrender.com${newspaper.imageUrl || newspaper.previewImage || newspaper.preview}`;
   };
 
   if (!newspaper) {

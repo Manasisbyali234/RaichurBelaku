@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { convertPDFToImage } from '../utils/pdfUtils';
-import { saveNewspaper } from '../utils/localStorage';
+import apiService from '../services/api';
 
 const AdminUploadPDF = ({ onUploadSuccess }) => {
   const [uploading, setUploading] = useState(false);
@@ -32,22 +32,27 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
       
       const { imageUrl, width, height } = result;
       
-      // Create newspaper object
-      const newspaper = {
-        id: Date.now().toString(),
-        name: file.name.replace('.pdf', ''),
-        date: new Date().toISOString(),
-        imageUrl,
-        previewImage: imageUrl, // Add both properties for compatibility
-        width,
-        height,
-        areas: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('pdf', file);
+      formData.append('name', file.name.replace('.pdf', ''));
+      formData.append('date', new Date().toISOString());
       
-      // Save to localStorage
-      saveNewspaper(newspaper);
+      // Upload using API service
+      const newspaper = await apiService.uploadNewspaper(formData);
+      
+      // Update the newspaper with the image URL
+      newspaper.imageUrl = imageUrl;
+      newspaper.width = width;
+      newspaper.height = height;
+      
+      // Save updated newspaper to localStorage
+      const newspapers = JSON.parse(localStorage.getItem('newspapers') || '[]');
+      const index = newspapers.findIndex(n => n.id === newspaper.id);
+      if (index !== -1) {
+        newspapers[index] = newspaper;
+        localStorage.setItem('newspapers', JSON.stringify(newspapers));
+      }
       
       // Reset form
       const fileInput = document.getElementById('pdf-upload');

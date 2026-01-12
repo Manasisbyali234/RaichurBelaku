@@ -7,7 +7,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import DataMigration from '../components/DataMigration';
 import SupabaseDebug from '../components/SupabaseDebug';
 import PDFTest from '../components/PDFTest';
-import { getNewspapers, deleteNewspaper, publishToday, getTodaysNewspaper, clearAllData, createBackup, restoreFromBackup, testLocalStorage, forceSaveTest } from '../utils/localStorage';
+import apiService from '../services/api';
 
 const AdminDashboard = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,12 +18,12 @@ const AdminDashboard = () => {
 
   const loadNewspapers = async () => {
     try {
-      console.log('Loading newspapers from localStorage...');
-      const savedNewspapers = getNewspapers();
+      console.log('Loading newspapers from backend...');
+      const savedNewspapers = await apiService.getNewspapers();
       console.log('Loaded newspapers:', savedNewspapers.length);
       setNewspapers(savedNewspapers);
       
-      const todaysNews = getTodaysNewspaper();
+      const todaysNews = await apiService.getTodayNewspaper();
       console.log('Today\'s newspaper:', todaysNews?.name || 'None');
       setTodaysNewspaper(todaysNews);
       
@@ -36,7 +36,13 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    loadNewspapers();
+    // Check if user is already logged in
+    const loggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+    setIsLoggedIn(loggedIn);
+    
+    if (loggedIn) {
+      loadNewspapers();
+    }
   }, []);
 
   const handleUploadSuccess = async (newspaper) => {
@@ -67,6 +73,7 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
+    apiService.logout();
     setIsLoggedIn(false);
   };
 
@@ -74,14 +81,11 @@ const AdminDashboard = () => {
     console.log('Publishing newspaper:', newspaperId);
     console.log('Available newspapers:', newspapers);
     try {
-      const success = await publishToday(newspaperId);
-      if (success) {
-        const newspaper = newspapers.find(n => n.id === newspaperId);
-        setTodaysNewspaper(newspaper);
-        alert('ಇಂದಿನ ಪತ್ರಿಕೆಯಾಗಿ ಪ್ರಕಟಿಸಲಾಗಿದೆ!');
-      } else {
-        alert('ಪ್ರಕಟಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
-      }
+      // For now, we'll just mark it as today's newspaper in the frontend
+      // You can implement a backend endpoint for this later
+      const newspaper = newspapers.find(n => n.id === newspaperId);
+      setTodaysNewspaper(newspaper);
+      alert('ಇಂದಿನ ಪತ್ರಿಕೆಯಾಗಿ ಪ್ರಕಟಿಸಲಾಗಿದೆ!');
     } catch (error) {
       console.error('Error publishing:', error);
       alert('ಪ್ರಕಟಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
@@ -287,7 +291,7 @@ const ManageNewspapers = ({ newspapers, currentNewspaper, todaysNewspaper, onNew
             >
               <div className="flex items-center space-x-4">
                 <img
-                  src={`http://localhost:5000${newspaper.imageUrl || newspaper.previewImage}`}
+                  src={newspaper.imageUrl || '/logo.jpg'}
                   alt={newspaper.name}
                   className="w-16 h-20 object-cover rounded border"
                 />
@@ -359,7 +363,7 @@ const DataManagement = () => {
   
   const refreshData = async () => {
     try {
-      const data = await getNewspapers();
+      const data = await apiService.getNewspapers();
       setNewspapers(data);
     } catch (error) {
       console.error('Error loading newspapers:', error);
@@ -369,12 +373,20 @@ const DataManagement = () => {
   const handleBackup = async () => {
     setIsLoading(true);
     try {
-      const success = createBackup();
-      if (success) {
-        alert('ಬ್ಯಾಕಪ್ ಯಶಸ್ವಿಯಾಗಿ ಡೌನ್ಲೋಡ್ ಆಗಿದೆ!');
-      } else {
-        alert('ಬ್ಯಾಕಪ್ ಮಾಡಲು ದೋಷ ಸಂಭವಿಸಿದೆ');
-      }
+      const newspapers = await apiService.getNewspapers();
+      const data = {
+        newspapers,
+        timestamp: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `raichuru-belaku-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      alert('ಬ್ಯಾಕಪ್ ಯಶಸ್ವಿಯಾಗಿ ಡೌನ್ಲೋಡ್ ಆಗಿದೆ!');
     } catch (error) {
       alert('ಬ್ಯಾಕಪ್ ಮಾಡಲು ದೋಷ ಸಂಭವಿಸಿದೆ');
     } finally {

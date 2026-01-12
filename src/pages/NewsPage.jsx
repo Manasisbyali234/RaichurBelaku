@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getTodaysNewspaper, getNewspapers, getNewspaperById } from '../utils/localStorage';
+import apiService from '../services/api';
 import NewspaperViewer from '../components/NewspaperViewer';
 
 const NewsPage = () => {
@@ -14,16 +14,16 @@ const NewsPage = () => {
         let loadedNewspaper;
         if (newspaperId) {
           console.log('Loading newspaper by ID:', newspaperId);
-          loadedNewspaper = await getNewspaperById(newspaperId);
+          loadedNewspaper = await apiService.getNewspaper(newspaperId);
         } else {
           console.log('Loading today\'s newspaper...');
-          loadedNewspaper = await getTodaysNewspaper();
+          loadedNewspaper = await apiService.getTodayNewspaper();
           console.log('Today\'s newspaper result:', loadedNewspaper);
           
           // If no today's newspaper is set, get the latest newspaper
           if (!loadedNewspaper) {
             console.log('No today\'s newspaper found, getting latest...');
-            const allNewspapers = getNewspapers();
+            const allNewspapers = await apiService.getNewspapers();
             if (allNewspapers.length > 0) {
               loadedNewspaper = allNewspapers.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
               console.log('Using latest newspaper:', loadedNewspaper?.name);

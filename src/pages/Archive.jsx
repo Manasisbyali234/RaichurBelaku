@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getNewspapers } from '../utils/supabaseStorage';
-import { getNewspapers as getLocalNewspapers } from '../utils/localStorage';
+import apiService from '../services/api';
 import PDFLinkTest from '../components/PDFLinkTest';
 
 const Archive = () => {
@@ -13,14 +12,7 @@ const Archive = () => {
   useEffect(() => {
     const loadNewspapers = async () => {
       try {
-        // Try Supabase first
-        let savedNewspapers;
-        try {
-          savedNewspapers = await getNewspapers();
-        } catch (error) {
-          console.log('Supabase not available, using localStorage');
-          savedNewspapers = await getLocalNewspapers();
-        }
+        const savedNewspapers = await apiService.getNewspapers();
         setNewspapers(savedNewspapers);
         setFilteredNewspapers(savedNewspapers);
       } catch (error) {
@@ -134,7 +126,7 @@ const Archive = () => {
               <div key={newspaper.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-w-3 aspect-h-4">
                   <img
-                    src={newspaper.previewImage}
+                    src={`https://belku.onrender.com${newspaper.previewImage || newspaper.imageUrl}`}
                     alt={newspaper.name}
                     className="w-full h-48 sm:h-64 object-cover"
                   />

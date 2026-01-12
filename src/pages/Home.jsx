@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getTodaysNewspaper } from '../utils/localStorage';
+import apiService from '../services/api';
 import ClickableAreasDemo from '../components/ClickableAreasDemo';
 
 const Home = () => {
@@ -13,7 +13,7 @@ const Home = () => {
       try {
         setLoading(true);
         setError(null);
-        const newspaper = await getTodaysNewspaper();
+        const newspaper = await apiService.getTodayNewspaper();
         console.log('Loading today\'s newspaper:', newspaper);
         setTodaysNewspaper(newspaper);
       } catch (err) {
@@ -74,7 +74,7 @@ const Home = () => {
               try {
                 setLoading(true);
                 setError(null);
-                const newspaper = await getTodaysNewspaper();
+                const newspaper = await apiService.getTodayNewspaper();
                 console.log('Manual refresh - today\'s newspaper:', newspaper);
                 setTodaysNewspaper(newspaper);
               } catch (err) {
@@ -114,7 +114,7 @@ const Home = () => {
               <div className="md:flex">
                 <div className="md:w-1/2">
                   <img
-                    src={todaysNewspaper.previewImage}
+                    src={`https://belku.onrender.com${todaysNewspaper.previewImage || todaysNewspaper.imageUrl}`}
                     alt="Today's newspaper"
                     className="w-full h-64 md:h-full object-cover"
                   />
@@ -229,9 +229,9 @@ const TodaysHeadlines = ({ newspaper }) => {
 
   React.useEffect(() => {
     try {
-      if (newspaper && newspaper.areas) {
+      if (newspaper && newspaper.clickableAreas) {
         // Filter areas that have titles (actual news)
-        const newsAreas = newspaper.areas.filter(area => 
+        const newsAreas = newspaper.clickableAreas.filter(area => 
           area && area.title && area.title.trim()
         );
         setAreas(newsAreas);

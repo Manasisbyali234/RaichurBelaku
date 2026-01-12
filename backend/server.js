@@ -29,7 +29,12 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: [
+    'http://localhost:5173', 
+    'http://localhost:3000',
+    'https://zero0-39zj.onrender.com',
+    /\.onrender\.com$/
+  ],
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));

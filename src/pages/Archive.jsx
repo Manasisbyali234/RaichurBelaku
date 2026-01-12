@@ -126,7 +126,7 @@ const Archive = () => {
               <div key={newspaper.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-w-3 aspect-h-4">
                   <img
-                    src={`https://belku.onrender.com${newspaper.previewImage || newspaper.imageUrl}`}
+                    src={newspaper.previewImage || newspaper.imageUrl}
                     alt={newspaper.name}
                     className="w-full h-48 sm:h-64 object-cover"
                   />

@@ -21,6 +21,8 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
     
     try {
       console.log('Starting PDF upload for:', file.name);
+      console.log('File size:', file.size, 'bytes');
+      console.log('File type:', file.type);
       
       // Convert PDF to image using utility
       const result = await convertPDFToImage(file);
@@ -45,6 +47,12 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
       newspaper.imageUrl = imageUrl;
       newspaper.width = width;
       newspaper.height = height;
+      
+      console.log('PDF converted successfully:', {
+        imageUrl: imageUrl ? 'Generated' : 'Missing',
+        width,
+        height
+      });
       
       // Save updated newspaper to localStorage
       const newspapers = JSON.parse(localStorage.getItem('newspapers') || '[]');

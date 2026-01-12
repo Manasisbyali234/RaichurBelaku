@@ -179,6 +179,11 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">ಮೊದಲು PDF ಅಪ್ಲೋಡ್ ಮಾಡಿ</p>
+        {newspaper && (
+          <div className="mt-2 text-xs text-gray-400">
+            Debug: imageUrl = {newspaper.imageUrl ? 'Present' : 'Missing'}
+          </div>
+        )}
       </div>
     );
   }
@@ -196,10 +201,14 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
       <div className="relative border border-gray-300 rounded-lg overflow-hidden">
         <img
           ref={imageRef}
-          src={`https://belku.onrender.com${newspaper.imageUrl}`}
+          src={newspaper.imageUrl}
           alt="Newspaper"
           className="w-full h-auto"
           onLoad={handleImageLoad}
+          onError={(e) => {
+            console.error('Image failed to load:', e.target.src);
+            console.error('Image error event:', e);
+          }}
           style={{ display: 'none' }}
         />
         

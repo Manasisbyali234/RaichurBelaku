@@ -8,6 +8,12 @@ import DataMigration from '../components/DataMigration';
 import SupabaseDebug from '../components/SupabaseDebug';
 import PDFTest from '../components/PDFTest';
 import apiService from '../services/api';
+import { 
+  clearAllData, 
+  testLocalStorage, 
+  forceSaveTest, 
+  restoreFromBackup
+} from '../utils/localStorage';
 
 const AdminDashboard = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

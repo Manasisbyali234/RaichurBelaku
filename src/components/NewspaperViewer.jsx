@@ -56,10 +56,10 @@ const NewspaperViewer = ({ newspaper }) => {
 
   const getCurrentPageImage = () => {
     if (newspaper.pages && newspaper.pages[currentPage]) {
-      return `https://belku.onrender.com${newspaper.pages[currentPage].imageUrl}`;
+      return newspaper.pages[currentPage].imageUrl;
     }
     // Try different image properties
-    return `https://belku.onrender.com${newspaper.imageUrl || newspaper.previewImage || newspaper.preview}`;
+    return newspaper.imageUrl || newspaper.previewImage || newspaper.preview;
   };
 
   if (!newspaper) {

@@ -161,6 +161,57 @@ body {
   overflow: hidden;
 }
 
+/* Newspaper viewer specific styles */
+.newspaper-viewer-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Responsive newspaper container */
+.newspaper-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Improve image loading states */
+.newspaper-viewer-image[src="/logo.jpg"] {
+  opacity: 0.7;
+  filter: grayscale(50%);
+}
+
+/* Better responsive layout for home page newspaper preview */
+@media (max-width: 768px) {
+  .newspaper-preview {
+    flex-direction: column;
+  }
+  
+  .newspaper-preview img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+  }
+}
+
+/* Smooth transitions for zoom */
+.newspaper-viewer-image {
+  transition: transform 0.3s ease;
+}
+
+/* Better modal styling for mobile */
+@media (max-width: 640px) {
+  .news-modal {
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+    height: 100vh;
+  }
+}
+
 /* Print styles for newspaper viewing */
 @media print {
   .clickable-area {

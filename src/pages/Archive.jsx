@@ -142,7 +142,7 @@ const Archive = () => {
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Link
-                      to={`/newspaper/${newspaper.id}`}
+                      to={`/newspaper/${newspaper._id || newspaper.id}`}
                       className="flex-1 bg-newspaper-blue text-white text-center py-2 px-3 sm:px-4 rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                     >
                       ಓದಿ

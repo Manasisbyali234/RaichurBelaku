@@ -8,6 +8,8 @@ const NewspaperViewer = ({ newspaper }) => {
   const [showThumbnails, setShowThumbnails] = useState(false);
   const imageRef = useRef(null);
 
+  console.log('NewspaperViewer rendered with newspaper:', newspaper);
+
   useEffect(() => {
     const loadAreas = () => {
       if (newspaper) {
@@ -15,7 +17,9 @@ const NewspaperViewer = ({ newspaper }) => {
           // Get areas from the newspaper object (from backend)
           let clickableAreas = newspaper.clickableAreas || [];
           
-          console.log('Loading areas for newspaper:', newspaper.id, 'Areas:', clickableAreas);
+          console.log('Loading areas for newspaper:', newspaper._id || newspaper.id, 'Name:', newspaper.name);
+          console.log('Clickable areas found:', clickableAreas.length);
+          console.log('Areas data:', clickableAreas);
           console.log('Current page:', currentPage + 1);
           console.log('Areas for current page:', clickableAreas.filter(area => !area.pageNumber || area.pageNumber === currentPage + 1));
           setAreas(clickableAreas);
@@ -23,6 +27,8 @@ const NewspaperViewer = ({ newspaper }) => {
           console.error('Error loading areas:', error);
           setAreas([]);
         }
+      } else {
+        console.log('No newspaper loaded');
       }
     };
     
@@ -56,13 +62,30 @@ const NewspaperViewer = ({ newspaper }) => {
 
   const getCurrentPageImage = () => {
     if (newspaper.pages && newspaper.pages[currentPage]) {
-      return newspaper.pages[currentPage].imageUrl;
+      return getFullImageUrl(newspaper.pages[currentPage].imageUrl || newspaper.pages[currentPage]);
     }
     // Try different image properties
-    return newspaper.imageUrl || newspaper.previewImage || newspaper.preview;
+    return getFullImageUrl(newspaper.imageUrl || newspaper.previewImage || newspaper.preview);
+  };
+
+  const getFullImageUrl = (imageUrl) => {
+    if (!imageUrl) return '/logo.jpg';
+    
+    // If it's already a full URL or base64, return as is
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) {
+      return imageUrl;
+    }
+    
+    // If it's a relative path, prepend backend URL
+    if (imageUrl.startsWith('/uploads/')) {
+      return `http://localhost:3001${imageUrl}`;
+    }
+    
+    return imageUrl;
   };
 
   if (!newspaper) {
+    console.log('NewspaperViewer: No newspaper provided');
     return (
       <div className="bg-white rounded-lg shadow-md p-8 text-center">
         <div className="text-gray-500 mb-4">
@@ -72,6 +95,9 @@ const NewspaperViewer = ({ newspaper }) => {
         </div>
         <h3 className="text-xl font-semibold text-gray-700 mb-2">ಇಂದಿನ ಪತ್ರಿಕೆ ಲಭ್ಯವಿಲ್ಲ</h3>
         <p className="text-gray-600">ದಯವಿಟ್ಟು ನಂತರ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಆರ್ಕೈವ್ ಪರಿಶೀಲಿಸಿ</p>
+        <div className="mt-4 text-sm text-gray-500">
+          <p>Debug: Newspaper object is null or undefined</p>
+        </div>
       </div>
     );
   }
@@ -81,33 +107,31 @@ const NewspaperViewer = ({ newspaper }) => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h1 className="text-xl font-bold text-newspaper-blue">ರಾಯಚೂರು ಬೆಳಕು</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-newspaper-blue">ರಾಯಚೂರು ಬೆಳಕು</h1>
               <p className="text-sm text-gray-600">{new Date(newspaper.date).toLocaleDateString('kn-IN')}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => setShowThumbnails(!showThumbnails)}
-                className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-sm"
+                className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-sm flex-1 sm:flex-none"
               >
                 {showThumbnails ? 'ಮುಚ್ಚಿಸಿ' : 'ಪುಟಗಳು'}
               </button>
               <div className="flex items-center gap-1 bg-gray-200 rounded">
                 <button
                   onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}
-                  className="px-2 py-1 hover:bg-gray-300 rounded-l"
+                  className="px-2 py-1 hover:bg-gray-300 rounded-l text-lg font-bold"
                 >-</button>
-                <span className="px-2 py-1 text-sm">{Math.round(zoom * 100)}%</span>
+                <span className="px-2 py-1 text-sm min-w-[50px] text-center">{Math.round(zoom * 100)}%</span>
                 <button
                   onClick={() => setZoom(Math.min(3, zoom + 0.25))}
-                  className="px-2 py-1 hover:bg-gray-300 rounded-r"
+                  className="px-2 py-1 hover:bg-gray-300 rounded-r text-lg font-bold"
                 >+</button>
               </div>
             </div>
           </div>
-          
-
         </div>
       </div>
 
@@ -127,9 +151,10 @@ const NewspaperViewer = ({ newspaper }) => {
                     }`}
                   >
                     <img
-                      src={page.imageUrl}
+                      src={getFullImageUrl(page.imageUrl || page)}
                       alt={`Page ${index + 1}`}
                       className="w-full h-auto rounded"
+                      onError={(e) => { e.target.src = '/logo.jpg'; }}
                     />
                     <p className="text-xs text-center mt-1">ಪುಟ {index + 1}</p>
                   </div>
@@ -141,43 +166,93 @@ const NewspaperViewer = ({ newspaper }) => {
 
         {/* Main Viewer */}
         <div className="flex-1 overflow-auto">
-          <div className="p-4">
+          <div className="p-2 md:p-4">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div 
-                className="relative" 
+                className="relative mx-auto" 
                 style={{ 
                   transform: `scale(${zoom})`, 
-                  transformOrigin: 'top left',
-                  position: 'relative'
+                  transformOrigin: 'top center',
+                  position: 'relative',
+                  maxWidth: '100%'
                 }}
               >
                 <img
                   ref={imageRef}
                   src={getCurrentPageImage()}
                   alt={`Newspaper page ${currentPage + 1}`}
-                  className="newspaper-viewer-image w-full h-auto block"
-                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  className="newspaper-viewer-image w-full h-auto block mx-auto"
+                  style={{ 
+                    pointerEvents: 'none', 
+                    userSelect: 'none', 
+                    position: 'relative', 
+                    zIndex: 1,
+                    maxWidth: '100%',
+                    height: 'auto'
+                  }}
+                  onError={(e) => {
+                    console.error('Failed to load newspaper image:', getCurrentPageImage());
+                    e.target.src = '/logo.jpg'; // Fallback image
+                  }}
                 />
                 
-                {areas.filter(area => !area.pageNumber || area.pageNumber === currentPage + 1).map(area => (
-                  <div
-                    key={area.id}
-                    className="absolute cursor-pointer"
-                    style={{
-                      left: `${area.x}px`,
-                      top: `${area.y}px`,
-                      width: `${Math.abs(area.width)}px`,
-                      height: `${Math.abs(area.height)}px`
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Area clicked!', area);
-                      handleAreaClick(area);
-                    }}
-                    title={area.title || 'ಕ್ಲಿಕ್ ಮಾಡಿ'}
-                  />
-                ))}
+                {/* Clickable areas container */}
+                <div 
+                  className="absolute inset-0" 
+                  style={{ 
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%'
+                  }}
+                >
+                  {areas.filter(area => !area.pageNumber || area.pageNumber === currentPage + 1).map((area, index) => {
+                    // Calculate scaled coordinates based on current image display size
+                    const imgElement = imageRef.current;
+                    if (!imgElement) return null;
+                    
+                    const displayWidth = imgElement.offsetWidth;
+                    const displayHeight = imgElement.offsetHeight;
+                    const naturalWidth = imgElement.naturalWidth;
+                    const naturalHeight = imgElement.naturalHeight;
+                    
+                    // Calculate scale factors
+                    const scaleX = displayWidth / naturalWidth;
+                    const scaleY = displayHeight / naturalHeight;
+                    
+                    // Scale the area coordinates
+                    const scaledX = area.x * scaleX;
+                    const scaledY = area.y * scaleY;
+                    const scaledWidth = Math.abs(area.width) * scaleX;
+                    const scaledHeight = Math.abs(area.height) * scaleY;
+                    
+                    return (
+                      <div
+                        key={area.id || index}
+                        className="absolute cursor-pointer transition-all duration-200"
+                        style={{
+                          left: `${scaledX}px`,
+                          top: `${scaledY}px`,
+                          width: `${scaledWidth}px`,
+                          height: `${scaledHeight}px`,
+                          pointerEvents: 'auto',
+                          zIndex: 20
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Area clicked!', area);
+                          handleAreaClick(area);
+                        }}
+                        title={area.title || 'ಕ್ಲಿಕ್ ಮಾಡಿ'}
+                      >
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -188,11 +263,11 @@ const NewspaperViewer = ({ newspaper }) => {
       {newspaper.pages && newspaper.totalPages > 1 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t">
           <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
               <button
                 onClick={prevPage}
                 disabled={currentPage === 0}
-                className="bg-newspaper-blue text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="bg-newspaper-blue text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 w-full sm:w-auto justify-center"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -200,22 +275,22 @@ const NewspaperViewer = ({ newspaper }) => {
                 ಹಿಂದಿನ ಪುಟ
               </button>
               
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">ಪುಟ {currentPage + 1} / {newspaper.totalPages}</span>
+              <div className="flex items-center gap-4 w-full sm:w-auto justify-center">
+                <span className="text-sm font-medium whitespace-nowrap">ಪುಟ {currentPage + 1} / {newspaper.totalPages}</span>
                 <input
                   type="range"
                   min="0"
                   max={newspaper.totalPages - 1}
                   value={currentPage}
                   onChange={(e) => setCurrentPage(parseInt(e.target.value))}
-                  className="w-32"
+                  className="w-24 sm:w-32"
                 />
               </div>
               
               <button
                 onClick={nextPage}
                 disabled={currentPage === newspaper.totalPages - 1}
-                className="bg-newspaper-blue text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="bg-newspaper-blue text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 w-full sm:w-auto justify-center"
               >
                 ಮುಂದಿನ ಪುಟ
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,6 +299,15 @@ const NewspaperViewer = ({ newspaper }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Debug info - remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-4 right-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs z-50">
+          <div>Areas loaded: {areas.length}</div>
+          <div>Current page: {currentPage + 1}</div>
+          <div>Areas for page: {areas.filter(area => !area.pageNumber || area.pageNumber === currentPage + 1).length}</div>
         </div>
       )}
 
@@ -293,24 +377,65 @@ const NewspaperViewer = ({ newspaper }) => {
 const CroppedImage = ({ sourceImage, area, alt }) => {
   const canvasRef = React.useRef(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!sourceImage || !area) {
+      setError('Missing image or area data');
+      return;
+    }
+
     const img = new Image();
+    
     img.onload = () => {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      
-      canvas.width = Math.abs(area.width);
-      canvas.height = Math.abs(area.height);
-      
-      ctx.drawImage(
-        img,
-        area.x, area.y, Math.abs(area.width), Math.abs(area.height),
-        0, 0, Math.abs(area.width), Math.abs(area.height)
-      );
-      
-      setCroppedImageUrl(canvas.toDataURL());
+      try {
+        const canvas = canvasRef.current;
+        if (!canvas) {
+          setError('Canvas not available');
+          return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setError('Canvas context not available');
+          return;
+        }
+        
+        // Validate area dimensions
+        const width = Math.abs(area.width);
+        const height = Math.abs(area.height);
+        
+        if (width <= 0 || height <= 0) {
+          setError('Invalid area dimensions');
+          return;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Clear canvas first
+        ctx.clearRect(0, 0, width, height);
+        
+        // Draw the cropped image
+        ctx.drawImage(
+          img,
+          area.x, area.y, width, height,
+          0, 0, width, height
+        );
+        
+        setCroppedImageUrl(canvas.toDataURL('image/jpeg', 0.8));
+        setError(null);
+      } catch (err) {
+        console.error('Error cropping image:', err);
+        setError('Failed to crop image');
+      }
     };
+    
+    img.onerror = () => {
+      console.error('Failed to load source image:', sourceImage);
+      setError('Failed to load image');
+    };
+    
     img.crossOrigin = 'anonymous';
     img.src = sourceImage;
   }, [sourceImage, area]);
@@ -319,7 +444,12 @@ const CroppedImage = ({ sourceImage, area, alt }) => {
     <div className="bg-gray-50 p-4 rounded-lg">
       <canvas ref={canvasRef} style={{ display: 'none' }} />
       <div className="text-center">
-        {croppedImageUrl ? (
+        {error ? (
+          <div className="text-red-500 p-4">
+            <p>ಚಿತ್ರ ಲೋಡ್ ಆಗಲಿಲ್ಲ</p>
+            <p className="text-xs">{error}</p>
+          </div>
+        ) : croppedImageUrl ? (
           <img
             src={croppedImageUrl}
             alt={alt}
@@ -327,7 +457,7 @@ const CroppedImage = ({ sourceImage, area, alt }) => {
             style={{ maxHeight: '500px' }}
           />
         ) : (
-          <div className="text-gray-500">Loading...</div>
+          <div className="text-gray-500 p-4">ಲೋಡ್ ಆಗುತ್ತಿದೆ...</div>
         )}
         <p className="text-xs text-gray-600 mt-2">ಆಯ್ಕೆ ಮಾಡಿದ ಪ್ರದೇಶದ ಚಿತ್ರ</p>
       </div>

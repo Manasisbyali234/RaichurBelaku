@@ -24,53 +24,72 @@ const AdminUploadPDF = ({ onUploadSuccess }) => {
       console.log('File size:', file.size, 'bytes');
       console.log('File type:', file.type);
       
-      // Convert PDF to image using utility
-      const result = await convertPDFToImage(file);
-      console.log('PDF conversion result:', result);
+      let imageUrl = '';
+      let width = 800;
+      let height = 1200;
       
-      if (!result || !result.imageUrl) {
-        throw new Error('PDF conversion failed - no image generated');
+      // Try PDF conversion, but don't fail if it doesn't work
+      try {
+        console.log('Starting PDF conversion...');
+        const result = await convertPDFToImage(file);
+        console.log('PDF conversion result:', result);
+        
+        if (result && result.imageUrl) {
+          imageUrl = result.imageUrl;
+          width = result.width || 800;
+          height = result.height || 1200;
+          console.log('PDF conversion successful');
+        } else {
+          console.warn('PDF conversion returned no image, proceeding without preview');
+        }
+      } catch (conversionError) {
+        console.error('PDF conversion failed, proceeding without preview:', conversionError);
+        // Continue with upload even if conversion fails
       }
-      
-      const { imageUrl, width, height } = result;
       
       // Create FormData for upload
       const formData = new FormData();
       formData.append('pdf', file);
       formData.append('name', file.name.replace('.pdf', ''));
       formData.append('date', new Date().toISOString());
+      formData.append('imageUrl', imageUrl);
+      formData.append('width', width.toString());
+      formData.append('height', height.toString());
+      
+      console.log('Uploading to backend...');
       
       // Upload using API service
       const newspaper = await apiService.uploadNewspaper(formData);
       
-      // Update the newspaper with the image URL
-      newspaper.imageUrl = imageUrl;
-      newspaper.width = width;
-      newspaper.height = height;
-      
-      console.log('PDF converted successfully:', {
-        imageUrl: imageUrl ? 'Generated' : 'Missing',
-        width,
-        height
-      });
-      
-      // Save updated newspaper to localStorage
-      const newspapers = JSON.parse(localStorage.getItem('newspapers') || '[]');
-      const index = newspapers.findIndex(n => n.id === newspaper.id);
-      if (index !== -1) {
-        newspapers[index] = newspaper;
-        localStorage.setItem('newspapers', JSON.stringify(newspapers));
-      }
+      console.log('Upload successful:', newspaper);
       
       // Reset form
       const fileInput = document.getElementById('pdf-upload');
       if (fileInput) fileInput.value = '';
       
-      onUploadSuccess(newspaper);
+      // Call success callback
+      if (onUploadSuccess && typeof onUploadSuccess === 'function') {
+        onUploadSuccess(newspaper);
+      }
+      
       alert('ಪತ್ರಿಕೆ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್ಲೋಡ್ ಆಗಿದೆ!');
     } catch (error) {
       console.error('Upload error:', error);
-      alert(error.message || 'PDF ಅಪ್ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ ಸಂಭವಿಸಿದೆ');
+      
+      // More specific error messages
+      let errorMessage = 'PDF ಅಪ್ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ ಸಂಭವಿಸಿದೆ';
+      
+      if (error.message) {
+        if (error.message.includes('Network')) {
+          errorMessage = 'ನೆಟ್ವರ್ಕ್ ದೋಷ. ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಪರೀಕ್ಷಿಸಿ.';
+        } else if (error.message.includes('Backend')) {
+          errorMessage = 'ಸರ್ವರ್ ದೋಷ. ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಪ್ರಯತ್ನಿಸಿ.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setUploading(false);
     }

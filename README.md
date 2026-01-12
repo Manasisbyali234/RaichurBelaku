@@ -29,31 +29,57 @@ A complete frontend-only e-newspaper web application built with React and Tailwi
 
 ## Installation & Deployment
 
-### Local Development
+### Local Development with Backend
 
 1. **Clone or download the project**
    ```bash
    cd RaichurBelaku
    ```
 
-2. **Install dependencies**
+2. **Run setup script**
+   ```bash
+   # Windows
+   setup.bat
+   
+   # Linux/Mac
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+
+3. **Start both servers**
+   ```bash
+   # Start both frontend and backend
+   npm run start:all
+   
+   # Or start separately:
+   npm run backend:dev  # Backend on http://localhost:3001
+   npm run dev          # Frontend on http://localhost:5173
+   ```
+
+4. **Open your browser**
+   Navigate to `http://localhost:5173`
+
+### Manual Setup
+
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Setup environment (for cloud storage)**
+2. **Create uploads directory**
    ```bash
-   node setup-env.js
+   mkdir uploads
    ```
-   Or manually create `.env` file with your Supabase credentials.
 
-4. **Start the development server**
+3. **Start backend server**
+   ```bash
+   npm run backend:dev
+   ```
+
+4. **Start frontend (in another terminal)**
    ```bash
    npm run dev
    ```
-
-5. **Open your browser**
-   Navigate to `http://localhost:5173`
 
 ### Production Deployment (Netlify + Supabase)
 

@@ -15,6 +15,7 @@ const NewsPage = () => {
         if (newspaperId) {
           console.log('Loading newspaper by ID:', newspaperId);
           loadedNewspaper = await apiService.getNewspaper(newspaperId);
+          console.log('Loaded newspaper result:', loadedNewspaper);
         } else {
           console.log('Loading today\'s newspaper...');
           loadedNewspaper = await apiService.getTodayNewspaper();
@@ -31,9 +32,13 @@ const NewsPage = () => {
           }
         }
         console.log('Final loaded newspaper:', loadedNewspaper);
+        if (!loadedNewspaper) {
+          console.error('No newspaper could be loaded!');
+        }
         setNewspaper(loadedNewspaper);
       } catch (error) {
         console.error('Error loading newspaper:', error);
+        setNewspaper(null);
       } finally {
         setLoading(false);
       }

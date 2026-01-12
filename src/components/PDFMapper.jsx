@@ -13,6 +13,22 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
   const imageRef = useRef(null);
   const startPos = useRef({ x: 0, y: 0 });
 
+  const getFullImageUrl = (imageUrl) => {
+    if (!imageUrl) return '/logo.jpg';
+    
+    // If it's already a full URL or base64, return as is
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) {
+      return imageUrl;
+    }
+    
+    // If it's a relative path, prepend backend URL
+    if (imageUrl.startsWith('/uploads/')) {
+      return `http://localhost:3001${imageUrl}`;
+    }
+    
+    return imageUrl;
+  };
+
   useEffect(() => {
     if (newspaper?.clickableAreas) {
       setAreas(newspaper.clickableAreas);
@@ -74,10 +90,10 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
 
   const drawCanvas = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas?.getContext('2d');
     const img = imageRef.current;
     
-    if (!img) return;
+    if (!canvas || !ctx || !img) return;
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -128,25 +144,37 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
       return;
     }
     
+    // Store coordinates relative to the actual image dimensions
+    const canvas = canvasRef.current;
+    const img = imageRef.current;
+    
     const newArea = {
       ...selectedArea,
       id: Date.now(),
-      pageNumber: 1, // Add page number for single-page newspapers
+      pageNumber: 1,
       title: formData.title,
       content: formData.content,
-      imageUrl: formData.imageUrl
+      imageUrl: formData.imageUrl,
+      // Store both canvas coordinates and relative coordinates
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      imageWidth: img.naturalWidth,
+      imageHeight: img.naturalHeight
     };
     
     const updatedAreas = [...areas, newArea];
     setAreas(updatedAreas);
     
     try {
-      // Save to backend
-      await apiService.updateClickableAreas(newspaper.id, updatedAreas);
+      // Save to backend immediately
+      const savedNewspaper = await apiService.updateClickableAreas(newspaper._id || newspaper.id, updatedAreas);
+      console.log('Area saved successfully:', newArea.title);
       if (onAreasUpdate) onAreasUpdate(updatedAreas);
     } catch (error) {
       console.error('Error saving areas:', error);
       alert('ಪ್ರದೇಶಗಳನ್ನು ಉಳಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ');
+      // Revert the area addition on error
+      setAreas(areas);
     }
     
     setShowForm(false);
@@ -201,7 +229,7 @@ const PDFMapper = ({ newspaper, onAreasUpdate, onNavigateToManage }) => {
       <div className="relative border border-gray-300 rounded-lg overflow-hidden">
         <img
           ref={imageRef}
-          src={newspaper.imageUrl}
+          src={getFullImageUrl(newspaper.imageUrl)}
           alt="Newspaper"
           className="w-full h-auto"
           onLoad={handleImageLoad}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminUploadPDF from '../components/AdminUploadPDF';
 import PDFMapper from '../components/PDFMapper';
 import AdminLogin from '../components/AdminLogin';
@@ -7,6 +8,11 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import DataMigration from '../components/DataMigration';
 import SupabaseDebug from '../components/SupabaseDebug';
 import PDFTest from '../components/PDFTest';
+import PDFConversionTest from '../components/PDFConversionTest';
+import BackendDebug from '../components/BackendDebug';
+import SimpleUploadTest from '../components/SimpleUploadTest';
+import AreaMappingTest from '../components/AreaMappingTest';
+import AreaMappingGuide from '../components/AreaMappingGuide';
 import apiService from '../services/api';
 import { 
   clearAllData, 
@@ -16,6 +22,7 @@ import {
 } from '../utils/localStorage';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentNewspaper, setCurrentNewspaper] = useState(null);
   const [newspapers, setNewspapers] = useState([]);
@@ -85,13 +92,12 @@ const AdminDashboard = () => {
 
   const handlePublishToday = async (newspaperId) => {
     console.log('Publishing newspaper:', newspaperId);
-    console.log('Available newspapers:', newspapers);
     try {
-      // For now, we'll just mark it as today's newspaper in the frontend
-      // You can implement a backend endpoint for this later
-      const newspaper = newspapers.find(n => n.id === newspaperId);
+      await apiService.setTodayNewspaper(newspaperId);
+      const newspaper = newspapers.find(n => n.id === newspaperId || n._id === newspaperId);
       setTodaysNewspaper(newspaper);
       alert('ಇಂದಿನ ಪತ್ರಿಕೆಯಾಗಿ ಪ್ರಕಟಿಸಲಾಗಿದೆ!');
+      navigate('/today');
     } catch (error) {
       console.error('Error publishing:', error);
       alert('ಪ್ರಕಟಿಸಲು ದೋಷ ಸಂಭವಿಸಿದೆ!');
@@ -172,11 +178,24 @@ const AdminDashboard = () => {
               >
                 ಡೇಟಾ ನಿರ್ವಹಣೆ
               </button>
+              <button
+                onClick={() => setActiveTab('guide')}
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
+                  activeTab === 'guide'
+                    ? 'border-newspaper-blue text-newspaper-blue'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                ಮಾರ್ಗದರ್ಶಿ
+              </button>
             </nav>
           </div>
         </div>
 
         <div className="space-y-6">
+          {/* Backend Debug - Always visible for troubleshooting */}
+          <BackendDebug />
+          
           {/* Supabase Debug - Always visible for troubleshooting */}
           <SupabaseDebug />
           
@@ -187,11 +206,18 @@ const AdminDashboard = () => {
           <DataMigration />
           
           {activeTab === 'test' && (
-            <PDFTest />
+            <div className="space-y-4">
+              <AreaMappingTest />
+              <SimpleUploadTest />
+              <PDFConversionTest />
+              <PDFTest />
+            </div>
           )}
 
           {activeTab === 'upload' && (
-            <AdminUploadPDF onUploadSuccess={handleUploadSuccess} />
+            <ErrorBoundary>
+              <AdminUploadPDF onUploadSuccess={handleUploadSuccess} />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'mapper' && (
@@ -262,6 +288,10 @@ const AdminDashboard = () => {
           {activeTab === 'data' && (
             <DataManagement />
           )}
+
+          {activeTab === 'guide' && (
+            <AreaMappingGuide />
+          )}
         </div>
       </div>
     </div>
@@ -324,7 +354,7 @@ const ManageNewspapers = ({ newspapers, currentNewspaper, todaysNewspaper, onNew
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onPublishToday(newspaper.id);
+                      onPublishToday(newspaper._id || newspaper.id);
                     }}
                     className="bg-green-600 text-white text-xs px-2 py-1 rounded hover:bg-green-700"
                   >

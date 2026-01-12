@@ -1,13 +1,15 @@
 const mongoose = require('mongoose');
 
 const clickableAreaSchema = new mongoose.Schema({
+  id: { type: Number },
   x: { type: Number, required: true },
   y: { type: Number, required: true },
   width: { type: Number, required: true },
   height: { type: Number, required: true },
   title: { type: String, required: true },
   content: { type: String, required: true },
-  imageUrl: { type: String }
+  imageUrl: { type: String },
+  pageNumber: { type: Number, default: 1 }
 });
 
 const newspaperSchema = new mongoose.Schema({

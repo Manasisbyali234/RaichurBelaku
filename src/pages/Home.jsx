@@ -8,6 +8,22 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  const getFullImageUrl = (imageUrl) => {
+    if (!imageUrl) return '/logo.jpg';
+    
+    // If it's already a full URL or base64, return as is
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) {
+      return imageUrl;
+    }
+    
+    // If it's a relative path, prepend backend URL
+    if (imageUrl.startsWith('/uploads/')) {
+      return `http://localhost:3001${imageUrl}`;
+    }
+    
+    return imageUrl;
+  };
+  
   useEffect(() => {
     const loadTodaysNewspaper = async () => {
       try {
@@ -111,35 +127,51 @@ const Home = () => {
           <div className="space-y-8">
             {/* Main Newspaper Display */}
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="md:flex">
+              <div className="md:flex newspaper-preview">
                 <div className="md:w-1/2">
                   <img
-                    src={`https://belku.onrender.com${todaysNewspaper.previewImage || todaysNewspaper.imageUrl}`}
+                    src={getFullImageUrl(todaysNewspaper.previewImage || todaysNewspaper.imageUrl)}
                     alt="Today's newspaper"
-                    className="w-full h-64 md:h-full object-cover"
+                    className="w-full h-64 md:h-96 object-contain bg-gray-50"
+                    onError={(e) => { e.target.src = '/logo.jpg'; }}
                   />
                 </div>
-                <div className="md:w-1/2 p-8">
+                <div className="md:w-1/2 p-6 md:p-8">
                   <div className="flex items-center mb-4">
                     <div className="w-3 h-3 bg-newspaper-red rounded-full mr-3"></div>
                     <span className="text-sm text-gray-600">
                       {new Date(todaysNewspaper.date).toLocaleDateString('kn-IN')}
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">ಇಂದಿನ ಆವೃತ್ತಿ</h3>
-                  <p className="text-gray-600 mb-6">
+                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">ಇಂದಿನ ಆವೃತ್ತಿ</h3>
+                  <p className="text-gray-600 mb-6 text-sm md:text-base">
                     ಇಂದಿನ ಎಲ್ಲಾ ಪ್ರಮುಖ ಸುದ್ದಿಗಳು, ಸ್ಥಳೀಯ ಮಾಹಿತಿ ಮತ್ತು ವಿಶೇಷ ಲೇಖನಗಳನ್ನು ಓದಿ. 
                     ಪ್ರತಿ ಸುದ್ದಿಯನ್ನು ವಿವರವಾಗಿ ತಿಳಿಯಲು ಪತ್ರಿಕೆಯ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ.
                   </p>
-                  <Link
-                    to="/today"
-                    className="inline-flex items-center bg-newspaper-blue text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    ಪತ್ರಿಕೆ ಓದಿ
-                    <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Link
+                      to="/today"
+                      className="inline-flex items-center justify-center bg-newspaper-blue text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      ಪತ್ರಿಕೆ ಓದಿ
+                      <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                    {todaysNewspaper.pdfUrl && (
+                      <a
+                        href={getFullImageUrl(todaysNewspaper.pdfUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center border-2 border-newspaper-blue text-newspaper-blue px-6 py-3 rounded-lg hover:bg-newspaper-blue hover:text-white transition-colors font-medium"
+                      >
+                        PDF ಡೌನ್‌ಲೋಡ್
+                        <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -226,6 +258,7 @@ const Home = () => {
 const TodaysHeadlines = ({ newspaper }) => {
   const [areas, setAreas] = React.useState([]);
   const [error, setError] = React.useState(null);
+  const [showAll, setShowAll] = React.useState(false);
 
   React.useEffect(() => {
     try {
@@ -260,38 +293,45 @@ const TodaysHeadlines = ({ newspaper }) => {
     return null;
   }
 
+  const displayedAreas = showAll ? areas : areas.slice(0, 6);
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold text-gray-900">ಇಂದಿನ ಮುಖ್ಯ ಸುದ್ದಿಗಳು</h3>
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900">ಇಂದಿನ ಮುಖ್ಯ ಸುದ್ದಿಗಳು</h3>
+          <p className="text-sm text-gray-600 mt-1">ಒಟ್ಟು {areas.length} ಸುದ್ದಿಗಳು</p>
+        </div>
         <Link
           to="/today"
           className="text-newspaper-blue hover:text-blue-700 text-sm font-medium"
         >
-          ಎಲ್ಲಾ ಸುದ್ದಿಗಳು →
+          ಪತ್ರಿಕೆಯಲ್ಲಿ ಓದಿ →
         </Link>
       </div>
       
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {areas.slice(0, 6).map((area, index) => (
-          <div key={area.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {displayedAreas.map((area, index) => (
+          <div key={area.id || index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-newspaper-red rounded-full mt-2 flex-shrink-0"></div>
               <div className="flex-1">
-                <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                <h4 className="font-semibold text-gray-900 mb-2 text-sm leading-tight">
                   {area.title}
                 </h4>
                 {area.content && (
-                  <p className="text-sm text-gray-600 line-clamp-3 mb-3">
-                    {area.content.substring(0, 120)}...
+                  <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                    {area.content.length > 100 ? `${area.content.substring(0, 100)}...` : area.content}
                   </p>
                 )}
-                <Link
-                  to="/today"
-                  className="text-xs text-newspaper-blue hover:text-blue-700 font-medium"
-                >
-                  ಸಂಪೂರ್ಣ ಸುದ್ದಿ ಓದಿ →
-                </Link>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-newspaper-blue font-medium">
+                    ವಿವರಗಳಿಗೆ ಪತ್ರಿಕೆ ನೋಡಿ
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    #{index + 1}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -300,11 +340,20 @@ const TodaysHeadlines = ({ newspaper }) => {
       
       {areas.length > 6 && (
         <div className="text-center mt-6">
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="inline-flex items-center bg-newspaper-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-4"
+          >
+            {showAll ? 'ಕಡಿಮೆ ತೋರಿಸಿ' : `ಎಲ್ಲಾ ${areas.length} ಸುದ್ದಿಗಳು ತೋರಿಸಿ`}
+            <svg className={`w-4 h-4 ml-2 transition-transform ${showAll ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
           <Link
             to="/today"
-            className="inline-flex items-center bg-newspaper-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center border-2 border-newspaper-blue text-newspaper-blue px-6 py-2 rounded-lg hover:bg-newspaper-blue hover:text-white transition-colors"
           >
-            ಇನ್ನಷ್ಟು ಸುದ್ದಿಗಳು ({areas.length - 6})
+            ಪತ್ರಿಕೆಯಲ್ಲಿ ಓದಿ
             <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>

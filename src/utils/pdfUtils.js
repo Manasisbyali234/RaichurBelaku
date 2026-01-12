@@ -21,7 +21,17 @@ export const convertPDFToImage = async (pdfFile) => {
       throw new Error('Invalid PDF file');
     }
     
+    // Check if PDF.js is available
+    if (!pdfjsLib || !pdfjsLib.getDocument) {
+      throw new Error('PDF.js library not loaded properly');
+    }
+    
     const arrayBuffer = await pdfFile.arrayBuffer();
+    
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      throw new Error('Failed to read PDF file');
+    }
+    
     const pdf = await pdfjsLib.getDocument({
       data: arrayBuffer,
       cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
@@ -29,17 +39,29 @@ export const convertPDFToImage = async (pdfFile) => {
       standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`
     }).promise;
     
+    if (!pdf || pdf.numPages === 0) {
+      throw new Error('PDF has no pages or is corrupted');
+    }
+    
     const page = await pdf.getPage(1);
+    
+    if (!page) {
+      throw new Error('Failed to load first page of PDF');
+    }
     
     // High quality scale
     const scale = 2.0;
     const viewport = page.getViewport({ scale });
     
+    if (!viewport || viewport.width === 0 || viewport.height === 0) {
+      throw new Error('Invalid page dimensions');
+    }
+    
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     
     if (!context) {
-      throw new Error('Failed to get canvas context');
+      throw new Error('Failed to get canvas context - browser may not support canvas');
     }
     
     canvas.height = viewport.height;
@@ -55,6 +77,10 @@ export const convertPDFToImage = async (pdfFile) => {
     // Convert to base64 and store in localStorage
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     
+    if (!imageData || imageData.length < 100) {
+      throw new Error('Failed to generate image from PDF');
+    }
+    
     return {
       imageUrl: imageData,
       width: viewport.width,
@@ -62,7 +88,23 @@ export const convertPDFToImage = async (pdfFile) => {
     };
   } catch (error) {
     console.error('Error converting PDF to image:', error);
-    throw new Error('PDF ಪ್ರಕ್ರಿಯೆಗೊಳಿಸುವಲ್ಲಿ ದೋಷ: ' + error.message);
+    
+    // Provide more specific error messages
+    let errorMessage = 'PDF ಪ್ರಕ್ರಿಯೆಗೊಳಿಸುವಲ್ಲಿ ದೋಷ';
+    
+    if (error.name === 'InvalidPDFException') {
+      errorMessage = 'ಅಮಾನ್ಯ PDF ಫೈಲ್. ದಯವಿಟ್ಟು ಮತ್ತೊಂದು ಫೈಲ್ ಪ್ರಯತ್ನಿಸಿ.';
+    } else if (error.name === 'MissingPDFException') {
+      errorMessage = 'PDF ಫೈಲ್ ಕಾಣೆಯಾಗಿದೆ ಅಥವಾ ಹಾನಿಗೊಳಗಾಗಿದೆ.';
+    } else if (error.name === 'UnexpectedResponseException') {
+      errorMessage = 'PDF ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ನೆಟ್ವರ್ಕ್ ದೋಷ.';
+    } else if (error.message.includes('canvas')) {
+      errorMessage = 'ಬ್ರೌಸರ್ ಸಪೋರ್ಟ್ ಇಲ್ಲ. ದಯವಿಟ್ಟು ಇತರ ಬ್ರೌಸರ್ ಪ್ರಯತ್ನಿಸಿ.';
+    } else if (error.message.includes('worker')) {
+      errorMessage = 'PDF ವರ್ಕರ್ ಲೋಡ್ ಆಗಿಲ್ಲ. ಪುಟ ರಿಫ್ರೆಶ್ ಮಾಡಿ.';
+    }
+    
+    throw new Error(errorMessage + ': ' + error.message);
   }
 };
 

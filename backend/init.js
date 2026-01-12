@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
 const Admin = require('./models/Admin');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 async function initializeDatabase() {
   try {
+    console.log('MongoDB URI:', process.env.MONGODB_URI);
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected');
 

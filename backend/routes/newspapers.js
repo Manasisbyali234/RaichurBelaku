@@ -83,10 +83,13 @@ const upload = multer({
 // Get all newspapers
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching all newspapers...');
     const newspapers = await Newspaper.find().sort({ date: -1 });
+    console.log(`Found ${newspapers.length} newspapers`);
     const processedNewspapers = newspapers.map(newspaper => processNewspaperData(req, newspaper));
     res.json(processedNewspapers);
   } catch (error) {
+    console.error('Error fetching newspapers:', error);
     res.status(500).json({ message: error.message });
   }
 });

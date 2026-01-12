@@ -1,9 +1,11 @@
 // Backend API service
 class ApiService {
   constructor() {
-    // Use relative URLs in production, localhost in development
-    this.baseURL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api';
+    // Use environment variable or fallback to localhost for development
+    const isDevelopment = import.meta.env.DEV || import.meta.env.VITE_NODE_ENV === 'development';
+    this.baseURL = isDevelopment ? 'http://localhost:3001/api' : '/api';
     this.isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+    console.log('API Service initialized with baseURL:', this.baseURL);
   }
 
   // Auth methods

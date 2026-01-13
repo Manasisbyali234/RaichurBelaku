@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>ರಾಯಚೂರು ಬೆಳಕು - API Connection Test</h1>
+    
+    <div id="status"></div>
+    
+    <button onclick="testConnection()">Test Backend Connection</button>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testNewspapers()">Test Newspapers</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'http://localhost:3001/api';
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        async function testConnection() {
+            document.getElementById('results').innerHTML = '';
+            log('Testing backend connection...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL.replace('/api', '')}/api/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✓ Backend is running! Status: ${data.status}`, 'success');
+                } else {
+                    log(`✗ Backend error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Connection failed: ${error.message}`, 'error');
+                log('Make sure backend server is running on port 3001', 'info');
+            }
+        }
+        
+        async function testLogin() {
+            log('Testing login...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✓ Login successful!', 'success');
+                } else {
+                    log(`✗ Login failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Login error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testNewspapers() {
+            log('Testing newspapers endpoint...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/newspapers`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✓ Newspapers loaded: ${data.length} items`, 'success');
+                } else {
+                    log(`✗ Newspapers error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Newspapers error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = () => {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

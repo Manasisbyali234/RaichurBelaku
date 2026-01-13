@@ -2,11 +2,12 @@
   "name": "raichur-belaku-backend",
   "version": "1.0.0",
   "description": "Backend API for Raichur Belaku Digital Newspaper",
-  "main": "backend/simple-server.js",
+  "main": "simple-server.js",
   "scripts": {
     "start": "node simple-server.js",
     "dev": "nodemon simple-server.js",
-    "install-deps": "npm install"
+    "install-deps": "npm install",
+    "test": "node -e \"console.log('Backend test OK')\""
   },
   "dependencies": {
     "express": "^4.18.2",

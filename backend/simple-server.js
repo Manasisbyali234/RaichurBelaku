@@ -82,12 +82,9 @@ app.put('/api/newspapers/:id/areas', (req, res) => {
   }
 });
 
-// Simple file upload handling
+// Simple file upload handling - store as base64
 const multer = require('multer');
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
-});
+const storage = multer.memoryStorage(); // Store in memory instead of disk
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 app.post('/api/newspapers', upload.single('pdf'), (req, res) => {
@@ -98,13 +95,13 @@ app.post('/api/newspapers', upload.single('pdf'), (req, res) => {
       return res.status(400).json({ message: 'PDF file required' });
     }
 
+    // Convert PDF to base64
+    const pdfBase64 = req.file.buffer.toString('base64');
+    const pdfDataUrl = `data:application/pdf;base64,${pdfBase64}`;
+
     let savedImageUrl = null;
     if (imageUrl && imageUrl.startsWith('data:image')) {
-      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
-      const imageBuffer = Buffer.from(base64Data, 'base64');
-      const imagePath = path.join(uploadsDir, `${Date.now()}-preview.jpg`);
-      fs.writeFileSync(imagePath, imageBuffer);
-      savedImageUrl = `/uploads/${path.basename(imagePath)}`;
+      savedImageUrl = imageUrl; // Store image as base64 too
     }
 
     const newspaper = {
@@ -112,7 +109,8 @@ app.post('/api/newspapers', upload.single('pdf'), (req, res) => {
       _id: Date.now().toString(),
       name: name || req.file.originalname.replace('.pdf', ''),
       date: new Date(date || Date.now()),
-      pdfUrl: `/uploads/${req.file.filename}`,
+      pdfUrl: pdfDataUrl, // Store as base64 data URL
+      pdfBase64: pdfBase64, // Store raw base64
       imageUrl: savedImageUrl || '/logo.jpg',
       previewImage: savedImageUrl || '/logo.jpg',
       clickableAreas: [],
@@ -120,7 +118,11 @@ app.post('/api/newspapers', upload.single('pdf'), (req, res) => {
       pages: [savedImageUrl || '/logo.jpg'],
       width: parseInt(width) || 800,
       height: parseInt(height) || 1200,
-      isToday: newspapers.length === 0
+      isToday: newspapers.length === 0,
+      totalPages: 1,
+      actualPages: 1,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     newspapers.push(newspaper);
@@ -130,8 +132,38 @@ app.post('/api/newspapers', upload.single('pdf'), (req, res) => {
   }
 });
 
+// Add endpoint to serve PDF as base64
+app.get('/api/newspapers/:id/pdf', (req, res) => {
+  const newspaper = newspapers.find(n => n.id === req.params.id || n._id === req.params.id);
+  if (newspaper && newspaper.pdfBase64) {
+    res.json({ pdfBase64: newspaper.pdfBase64 });
+  } else {
+    res.status(404).json({ message: 'PDF not found' });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
+
+// Error handling
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+});
+
 app.listen(PORT, () => {
   console.log(`✓ Simple server running on port ${PORT}`);
   console.log(`✓ No MongoDB required - using in-memory storage`);
+  console.log(`✓ Health check: http://localhost:${PORT}/api/health`);
+  console.log(`✓ Uploads directory: ${uploadsDir}`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`✗ Port ${PORT} is already in use. Please close other applications using this port.`);
+    console.error('✗ Or change the PORT in .env file');
+  } else {
+    console.error('✗ Server error:', err);
+  }
+  process.exit(1);
 });

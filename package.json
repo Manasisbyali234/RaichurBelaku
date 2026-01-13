@@ -14,6 +14,7 @@
     "backend:install": "cd backend && npm install",
     "backend:dev": "cd backend && npm run dev",
     "start:all": "concurrently \"npm run backend:dev\" \"npm run dev\"",
+    "start:simple": "concurrently \"cd backend && node simple-server.js\" \"npm run dev\"",
     "setup": "npm install && cd backend && npm install",
     "fix": "npm run setup && echo Setup complete!"
   },

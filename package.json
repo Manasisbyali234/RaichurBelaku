@@ -10,6 +10,7 @@
     "dev": "node node_modules/vite/bin/vite.js",
     "build": "node node_modules/vite/bin/vite.js build",
     "preview": "node node_modules/vite/bin/vite.js preview",
+    "start": "node server.js",
     "test-backend": "node test-backend.js",
     "backend:install": "cd backend && npm install",
     "backend:dev": "cd backend && npm run dev",
